@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>溜溜导航</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛸</text></svg>" />
+
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('theme') || 'dark';
+                document.documentElement.classList.toggle('day', t === 'light');
+            } catch (e) {}
+        })();
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        :root {
+            --bg1: #0b0f1a;
+            --bg2: #12182b;
+            --bg3: #1a1035;
+            --panel: rgba(15, 23, 42, .55);
+            --border: rgba(99, 102, 241, .28);
+            --fg: #e2e8f0;
+            --muted-fg: #94a3b8;
+            --title-g: linear-gradient(90deg, #a78bfa, #e879f9, #38bdf8);
+            --star-c: #fff;
+            --star-max: 1;
+        }
+        html.day {
+            --bg1: #e0f2fe;
+            --bg2: #f0f9ff;
+            --bg3: #ede9fe;
+            --panel: rgba(255, 255, 255, .62);
+            --border: rgba(99, 102, 241, .22);
+            --fg: #1e293b;
+            --muted-fg: #64748b;
+            --title-g: linear-gradient(90deg, #7c3aed, #db2777, #0284c7);
+            --star-c: #7c3aed;
+            --star-max: .35;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100dvh;
+            background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 45%, var(--bg3) 100%);
+            color: var(--fg);
+            font-family: 'Nunito', system-ui, sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            transition: background .4s, color .3s;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: -6%;
+            z-index: -3;
+            background: url("https://pic.feria.eu.org/1f9sfXr7/IMG-2026-08-23-0849324470.jpg") center/cover no-repeat;
+            animation: bgDrift 40s ease-in-out infinite alternate;
+            pointer-events: none;
+            will-change: transform;
+        }
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            pointer-events: none;
+            transition: background .4s;
+            background:
+                radial-gradient(ellipse at 50% 25%, rgba(11, 15, 26, .55) 0%, rgba(11, 15, 26, .82) 55%, rgba(10, 7, 26, .94) 100%),
+                linear-gradient(160deg, rgba(11, 15, 26, .6), rgba(18, 24, 43, .55) 45%, rgba(26, 16, 53, .7));
+        }
+        html.day body::after {
+            background:
+                radial-gradient(ellipse at 50% 25%, rgba(255, 255, 255, .62) 0%, rgba(240, 249, 255, .85) 55%, rgba(237, 233, 254, .94) 100%),
+                linear-gradient(160deg, rgba(224, 242, 254, .6), rgba(240, 249, 255, .55) 45%, rgba(237, 233, 254, .65));
+        }
+        @keyframes bgDrift {
+            from {
+                transform: scale(1.06) translate(-1.2%, -.8%);
+            }
+            to {
+                transform: scale(1.12) translate(1.2%, .8%);
+            }
+        }
+
+        .star-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background-repeat: repeat;
+            animation: starTwinkle 5s ease-in-out infinite;
+            will-change: opacity;
+        }
+        .star-layer--1 {
+            background-image:
+                radial-gradient(1.6px 1.6px at 20px 30px, var(--star-c), transparent),
+                radial-gradient(1.4px 1.4px at 130px 90px, var(--star-c), transparent),
+                radial-gradient(1.8px 1.8px at 70px 160px, #a78bfa, transparent),
+                radial-gradient(1.2px 1.2px at 190px 45px, var(--star-c), transparent);
+            background-size: 220px 220px;
+        }
+        .star-layer--2 {
+            background-image:
+                radial-gradient(2.4px 2.4px at 60px 50px, var(--star-c), transparent),
+                radial-gradient(1.8px 1.8px at 200px 150px, #e879f9, transparent),
+                radial-gradient(2px 2px at 120px 210px, #38bdf8, transparent);
+            background-size: 340px 340px;
+            animation-duration: 7s;
+            animation-delay: -2.5s;
+        }
+        @keyframes starTwinkle {
+            0%,
+            100% {
+                opacity: calc(var(--star-max) * .45);
+            }
+            50% {
+                opacity: var(--star-max);
+            }
+        }
+
+        .page {
+            max-width: 64rem;
+            min-height: 100dvh;
+            margin: 0 auto;
+            padding: 2rem 1rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+        @media (min-width: 640px) {
+            .page {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            .page {
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
+        }
+
+        /* ===== 顶栏 ===== */
+        .site-header {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        /* ===== 品牌徽标：轨道 + 飞碟（纯 CSS，无图片） ===== */
+        .brand-badge {
+            position: relative;
+            width: 2.3rem;
+            height: 2.3rem;
+            flex-shrink: 0;
+        }
+        .brand-core {
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, #1e2540, #141a2e);
+            box-shadow: inset 0 0 8px rgba(167, 139, 250, .35), 0 0 12px rgba(167, 139, 250, .25);
+        }
+        .brand-ufo {
+            font-size: 1rem;
+            line-height: 1;
+            display: inline-block;
+            animation: ufoFloat 2.6s ease-in-out infinite;
+            filter: drop-shadow(0 0 6px rgba(232, 121, 249, .55));
+        }
+        @keyframes ufoFloat {
+            0%, 100% { transform: translateY(1.5px) rotate(-5deg); }
+            50% { transform: translateY(-2px) rotate(5deg); }
+        }
+        .brand-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 0 15%, #a78bfa 35%, #e879f9 52%, transparent 70% 100%);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+            animation: ringSpin 3.6s linear infinite;
+        }
+        @keyframes ringSpin { to { transform: rotate(1turn); } }
+        .brand-sat {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            margin-left: -2.5px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 6px #38bdf8;
+            transform-origin: 2.5px calc(1.15rem - .5px);
+            animation: satOrbit 5s linear infinite;
+        }
+        @keyframes satOrbit { to { transform: rotate(1turn); } }
+        .brand-id {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+            min-width: 0;
+        }
+        .brand-name {
+            font-size: 1.08rem;
+            font-weight: 800;
+            letter-spacing: .02em;
+            color: var(--fg);
+            text-shadow: 0 0 14px rgba(167, 139, 250, .45);
+            white-space: nowrap;
+        }
+        .brand-sub {
+            font-size: .55rem;
+            font-weight: 700;
+            letter-spacing: .3em;
+            text-transform: uppercase;
+            color: var(--muted-fg);
+            opacity: .85;
+        }
+        .social {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+        .social a {
+            color: var(--muted-fg);
+            display: flex;
+            transition: color .15s, transform .15s;
+        }
+        .social a:hover {
+            color: #a78bfa;
+            transform: translateY(-1px);
+        }
+        .social svg {
+            width: 1.05rem;
+            height: 1.05rem;
+        }
+
+        /* ===== 每日一言 · 上下轮播 ===== */
+        .ticker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .55rem;
+            margin-bottom: 0.9rem;
+            padding: .55rem 1rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+            backdrop-filter: blur(8px);
+            border-radius: .75rem;
+            overflow: hidden;
+        }
+        .ticker__icon {
+            font-size: .95rem;
+            line-height: 1;
+            animation: tickerPop 3.6s ease-in-out infinite;
+        }
+        @keyframes tickerPop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.16) rotate(10deg); }
+        }
+        .ticker__view {
+            position: relative;
+            flex: 1;
+            max-width: 30rem;
+            height: 1.35rem;
+            overflow: hidden;
+        }
+        .ticker__line {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .82rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            color: var(--muted-fg);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: transform .45s cubic-bezier(.22, .9, .36, 1), opacity .45s ease;
+        }
+        .ticker__line.is-out {
+            transform: translateY(-110%);
+            opacity: 0;
+        }
+        .ticker__line.is-in {
+            transform: translateY(110%);
+            opacity: 0;
+            transition: none;
+        }
+
+        /* ===== 时间 + 控制条 ===== */
+        .meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .meta-text {
+            font-size: .8rem;
+            font-weight: 700;
+            line-height: 1.6;
+            letter-spacing: .3px;
+            background: var(--title-g);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #timeLine {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: .25rem;
+            padding: .25rem;
+            border: 1px solid var(--border);
+            border-radius: .85rem;
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+        .control-group button {
+            height: 1.85rem;
+            padding: 0 .55rem;
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            border: none;
+            border-radius: .6rem;
+            background: none;
+            color: var(--muted-fg);
+            font-family: inherit;
+            font-size: .75rem;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+        .control-group button:hover {
+            background: rgba(167, 139, 250, .18);
+            color: var(--fg);
+        }
+        .control-group button.active {
+            color: #fff;
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            box-shadow: 0 0 10px rgba(167, 139, 250, .45);
+        }
+        .control-group svg {
+            width: .9rem;
+            height: .9rem;
+        }
+        .control-divider {
+            width: 1px;
+            height: 1rem;
+            margin: 0 .15rem;
+            background: var(--border);
+        }
+        .kbd {
+            font-size: .65rem;
+            opacity: .75;
+        }
+        @media (max-width: 480px) {
+            .kbd {
+                display: none;
+            }
+        }
+
+        /* ===== 分类胶囊 ===== */
+        .tabs-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .tabs {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: .3rem;
+            padding: .3rem;
+            border: 1px solid var(--border);
+            border-radius: 1.15rem;
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+        }
+        .tabs button {
+            padding: .4rem .85rem;
+            border: 1px solid transparent;
+            border-radius: .75rem;
+            background: none;
+            color: var(--muted-fg);
+            font-family: inherit;
+            font-size: .78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .2s, color .2s, box-shadow .2s;
+        }
+        .tabs button:hover {
+            background: rgba(167, 139, 250, .16);
+            color: var(--fg);
+        }
+        .tabs button.active {
+            color: #fff;
+            background-image: var(--title-g);
+            box-shadow: 0 0 12px rgba(167, 139, 250, .4);
+            border-color: rgba(255, 255, 255, .3);
+        }
+
+        /* ===== 卡片网格 ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .75rem;
+        }
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .card {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            padding: .8rem .75rem;
+            border: 1px solid rgba(255, 255, 255, .24);
+            border-radius: 1rem;
+            text-decoration: none;
+            color: #fff;
+            overflow: hidden;
+            isolation: isolate;
+            background-image: linear-gradient(135deg, var(--c1), var(--c2) 55%, var(--c3));
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .2), 0 0 14px rgba(var(--glow), .32);
+            transform: translateZ(0);
+            transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+        @media (min-width: 640px) {
+            .card {
+                gap: .875rem;
+                padding: 1rem;
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, .5);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .28), 0 0 22px rgba(var(--glow), .6), 0 0 40px rgba(var(--glow), .28);
+        }
+        .card:active {
+            transform: translateY(0) scale(.985);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            bottom: -50%;
+            left: 0;
+            width: 45%;
+            z-index: -1;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .18), transparent);
+            transform: translateX(-160%) rotate(12deg);
+            animation: sweep 9s cubic-bezier(.4, 0, .6, 1) infinite;
+            animation-delay: var(--delay, 0s);
+            will-change: transform;
+        }
+        @keyframes sweep {
+            0% {
+                transform: translateX(-160%) rotate(12deg);
+            }
+            45%,
+            100% {
+                transform: translateX(340%) rotate(12deg);
+            }
+        }
+
+        .card.featured {
+            border-color: rgba(255, 255, 255, .42);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .24), 0 0 20px rgba(var(--glow), .5), 0 0 38px rgba(var(--glow), .22);
+        }
+        .card.featured:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .3), 0 0 28px rgba(var(--glow), .75), 0 0 52px rgba(var(--glow), .35);
+        }
+        .card.featured::before {
+            animation-duration: 6.5s;
+        }
+
+        .card-icon {
+            width: 2rem;
+            height: 2rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: .6rem;
+            background: rgba(255, 255, 255, .2);
+            border: 1px solid rgba(255, 255, 255, .28);
+            font-size: 1rem;
+            line-height: 1;
+        }
+        @media (min-width: 640px) {
+            .card-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: .8rem;
+                font-size: 1.2rem;
+            }
+        }
+
+        .card-body {
+            min-width: 0;
+            flex: 1;
+        }
+        .card-name {
+            display: block;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+        }
+        .card-desc {
+            margin-top: .15rem;
+            font-size: .65rem;
+            color: rgba(255, 255, 255, .88);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+        }
+        @media (min-width: 640px) {
+            .card-name {
+                font-size: .9rem;
+            }
+            .card-desc {
+                font-size: .75rem;
+            }
+        }
+
+        .empty {
+            padding: 3rem 0;
+            text-align: center;
+            font-size: .8rem;
+            color: var(--muted-fg);
+        }
+        .empty[hidden] {
+            display: none;
+        }
+
+        /* ===== 搜索浮层 ===== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: flex;
+            justify-content: center;
+            padding-top: 18vh;
+            background: rgba(5, 7, 15, .55);
+            backdrop-filter: blur(5px);
+        }
+        .overlay[hidden] {
+            display: none;
+        }
+        .search-box {
+            width: min(90%, 32rem);
+            height: fit-content;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .85rem 1.1rem;
+            border: 2px solid transparent;
+            border-radius: 1rem;
+            background: linear-gradient(var(--bg2), var(--bg2)) padding-box, var(--title-g) border-box;
+            box-shadow: 0 0 26px rgba(167, 139, 250, .4);
+        }
+        html.day .search-box {
+            background: linear-gradient(#fff, #fff) padding-box, var(--title-g) border-box;
+        }
+        .search-box svg {
+            width: 1.05rem;
+            height: 1.05rem;
+            color: var(--muted-fg);
+            flex-shrink: 0;
+        }
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: none;
+            color: var(--fg);
+            font-family: inherit;
+            font-size: .9rem;
+        }
+        .search-box input::placeholder {
+            color: var(--muted-fg);
+        }
+
+        /* ===== 右下角白天/黑夜切换 ===== */
+        .fab-theme {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 60;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+            color: var(--fg);
+            font-size: .95rem;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+            transition: transform .18s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+        .fab-theme:hover {
+            transform: scale(1.08);
+            border-color: rgba(167, 139, 250, .6);
+            box-shadow: 0 0 16px rgba(167, 139, 250, .4);
+        }
+        .fab-theme:active {
+            transform: scale(.92);
+        }
+        @media (max-width: 480px) {
+            .fab-theme {
+                right: 14px;
+                bottom: 14px;
+                width: 30px;
+                height: 30px;
+                font-size: .82rem;
+            }
+        }
+
+        /* ===== 页脚 ===== */
+        footer {
+            margin-top: auto;
+            padding: 2.5rem 0 3.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+        }
+        .footer-sections {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .footer-sections section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .7rem;
+        }
+        .footer-title {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            background: var(--title-g);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem 1.1rem;
+            font-size: .72rem;
+            color: var(--muted-fg);
+        }
+
+        /* ===== 友情链接：炫彩渐变胶囊按钮 ===== */
+        .friend-links {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+        }
+        .friend-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .5rem 1.05rem;
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 999px;
+            overflow: hidden;
+            isolation: isolate;
+            color: #fff;
+            font-size: .76rem;
+            font-weight: 700;
+            letter-spacing: .3px;
+            text-decoration: none;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+            background-image: linear-gradient(135deg, var(--c1), var(--c2) 55%, var(--c3));
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .22), 0 0 16px rgba(var(--glow), .45);
+            transform: translateZ(0);
+            transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+        .friend-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, .55);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .3), 0 0 24px rgba(var(--glow), .75), 0 0 44px rgba(var(--glow), .35);
+        }
+        .friend-btn:active {
+            transform: translateY(0) scale(.97);
+        }
+        .friend-btn::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            bottom: -50%;
+            left: 0;
+            width: 42%;
+            z-index: -1;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .28), transparent);
+            transform: translateX(-170%) rotate(12deg);
+            animation: sweep 7s cubic-bezier(.4, 0, .6, 1) infinite;
+            animation-delay: var(--delay, 0s);
+            will-change: transform;
+        }
+        .friend-btn .fb-icon {
+            font-size: .85rem;
+            line-height: 1;
+        }
+
+        .copyright {
+            font-size: .7rem;
+            color: var(--muted-fg);
+            opacity: .8;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            body::before,
+            .card::before,
+            .friend-btn::before,
+            .brand-ring,
+            .brand-sat,
+            .brand-ufo,
+            .ticker__icon {
+                animation: none !important;
+            }
+            * {
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="star-layer star-layer--1" aria-hidden="true"></div>
+    <div class="star-layer star-layer--2" aria-hidden="true"></div>
+
+    <div class="page">
+
+        <!-- ===== 顶栏 ===== -->
+        <header class="site-header">
+            <div class="brand-badge" aria-hidden="true">
+                <span class="brand-ring"></span>
+                <span class="brand-core"><span class="brand-ufo">🛸</span></span>
+                <i class="brand-sat"></i>
+            </div>
+            <div class="brand-id">
+                <span class="brand-name">溜溜导航</span>
+                <span class="brand-sub">LIULIU · NAV</span>
+            </div>
+            <nav class="social">
+                <a href="https://t.me/My_Zygx" target="_blank" rel="noopener" title="Telegram @My_Zygx" aria-label="Telegram @My_Zygx">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                </a>
+                <a href="https://gist.github.com/" target="_blank" rel="noopener" title="GitHub Gist" aria-label="GitHub Gist">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/></svg>
+                </a>
+            </nav>
+        </header>
+
+        <!-- ===== 每日一言 · 轮播 ===== -->
+        <div class="ticker" role="status" aria-label="每日一言">
+            <span class="ticker__icon" aria-hidden="true">💬</span>
+            <div class="ticker__view">
+                <span class="ticker__line" id="tickerLine">保持好奇，保持热爱 ✨</span>
+            </div>
+        </div>
+
+        <!-- ===== 时间 + 控制条 ===== -->
+        <div class="meta-row">
+            <div class="meta-text">
+                <div id="dateLine">加载中...</div>
+                <div id="timeLine">--:--:--</div>
+            </div>
+
+            <div class="control-group">
+                <button id="searchBtn" title="搜索站点">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
+                    <span class="kbd">⌘K</span>
+                </button>
+                <span class="control-divider"></span>
+                <button id="musicBtn" title="播放/暂停背景音乐">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 分类 ===== -->
+        <div class="tabs-wrap"><nav class="tabs" id="tabs"></nav></div>
+
+        <!-- ===== 卡片网格 ===== -->
+        <div class="grid" id="grid"></div>
+        <p class="empty" id="empty" hidden>没有匹配的站点</p>
+
+        <!-- ===== 页脚 ===== -->
+        <footer>
+            <div class="footer-sections">
+                <section>
+                    <h2 class="footer-title">友情链接</h2>
+                    <nav class="friend-links">
+                        <a class="friend-btn" href="https://zhuiju.me" target="_blank" rel="noopener"
+                        style="--c1:#ff0080; --c2:#40e0d0; --c3:#8a2be2; --glow:255,0,128; --delay:0s;">
+                        <span class="fb-icon">🎬</span>追剧么指南
+                    </a>
+                    <a class="friend-btn" href="https://bestcf.pages.dev/#proxyip" target="_blank" rel="noopener"
+                    style="--c1:#f59e0b; --c2:#fbbf24; --c3:#fcd34d; --glow:245,158,11; --delay:-2.3s;">
+                    <span class="fb-icon">🌐</span>CFETD 导航
+                </a>
+                <a class="friend-btn" href="https://660.660696.xyz/" target="_blank" rel="noopener"
+                style="--c1:#0284c7; --c2:#0ea5e9; --c3:#38bdf8; --glow:14,165,233; --delay:-4.6s;">
+                <span class="fb-icon">❤️</span>公益聚合订阅
+            </a>
+            <a class="friend-btn" href="https://jsnzkpg.com" target="_blank" rel="noopener"
+            style="--c1:#4c1d95; --c2:#d97706; --c3:#fbbf24; --glow:76,29,149; --delay:-1.5s;">
+            <span class="fb-icon">🧑‍💻</span>裤佬官网
+        </a>
+    </nav>
+</section>
+<section>
+    <h2 class="footer-title">站点统计</h2>
+    <div class="footer-links"><span id="statLine">-</span></div>
+</section>
+</div>
+
+<p class="copyright">© 2026 溜溜导航</p>
+</footer>
+
+</div>
+
+<!-- ===== 搜索浮层 ===== -->
+<div class="overlay" id="searchOverlay" hidden>
+    <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
+        <input id="searchInput" type="search" placeholder="搜索站点名称、说明或网址..." autocomplete="off" />
+    </div>
+</div>
+
+<!-- ===== 右下角主题切换 ===== -->
+<button class="fab-theme" id="themeBtn" title="切换白天/黑夜" aria-label="切换白天/黑夜">🌙</button>
+
+<!-- 自动循环播放 -->
+<audio id="audio" loop autoplay preload="auto"></audio>
+
+<script>
+    var SITES = [
+        // ===== 🎵 QQ音乐（置顶靠前） =====
+        { name: 'QQ音乐', desc: '海量正版音乐在线畅听', icon: '🎵', cat: '影视直播', url: 'https://q-16a.pages.dev/',
+            g: ['#00C853', '#1DB954', '#69F0AE'], glow: '0,200,83', feat: true },
+
+        // ===== 精品短剧 =====
+        { name: '精品短剧', desc: '海量短剧在线免费观看', icon: '🎭', cat: '影视直播', url: 'https://m.xgshort.com/drama',
+            g: ['#7c3aed', '#8b5cf6', '#a78bfa'], glow: '124,58,237', feat: true },
+
+        { name: '代理工具', desc: '节点订阅与配置工具', icon: '🚀', cat: '代理订阅', url: 'proxy.html',
+            g: ['#0891b2', '#4f46e5', '#a78bfa'], glow: '8,145,178', feat: true },
+        { name: 'TG代理', desc: 'Telegram 专用代理', icon: '✈️', cat: '代理订阅', url: 'tg.html',
+            g: ['#1da1f2', '#0d8bd9', '#38bdf8'], glow: '29,161,242', feat: true },
+        { name: '公益聚合订阅', desc: '免费公益节点聚合', icon: '❤️', cat: '代理订阅', url: 'https://660.660696.xyz/',
+            g: ['#0284c7', '#0ea5e9', '#38bdf8'], glow: '14,165,233' },
+        { name: 'CFETD导航', desc: 'Cloudflare 优选与 ProxyIP', icon: '🌐', cat: '代理订阅',
+            url: 'https://bestcf.pages.dev/#proxyip', g: ['#f59e0b', '#fbbf24', '#fcd34d'], glow: '245,158,11' },
+        { name: '订阅转换', desc: '各格式订阅链接互转', icon: '🔄', cat: '代理订阅', url: 'https://sub.ikar.eu.org',
+            g: ['#0891b2', '#06b6d4', '#22d3ee'], glow: '6,182,212' },
+        { name: '个人中转', desc: '自建中转入口', icon: '🛰️', cat: '代理订阅', url: 'https://4275.com/',
+            g: ['#6366f1', '#818cf8', '#a5b4fc'], glow: '99,102,241', rand: true },
+
+        { name: '直播源合集', desc: '整理好的直播源清单', icon: '📺', cat: '影视直播', url: 'live.html',
+            g: ['#dc2626', '#f97316', '#fbbf24'], glow: '220,38,38', feat: true },
+        { name: '追剧指南', desc: '免费无广告追剧资源导航', icon: '🎬', cat: '影视直播', url: 'https://zhuiju.me',
+            g: ['#ff0080', '#40e0d0', '#8a2be2'], glow: '255,0,128', feat: true },
+        { name: '个人追剧', desc: '自建影视聚合站', icon: '🍿', cat: '影视直播', url: 'https://eco.fe-spark.cn',
+            g: ['#0d9488', '#14b8a6', '#2dd4bf'], glow: '20,184,166' },
+        { name: '个人音乐', desc: '自建在线音乐播放', icon: '🎵', cat: '影视直播', url: 'https://zxsla.github.io/get/',
+            g: ['#db2777', '#ec4899', '#f472b6'], glow: '236,72,153' },
+
+        // ===== 修改后的“HTML渲染器”卡片 =====
+        { name: 'HTML渲染器', desc: '在线预览与渲染 HTML', icon: '📄', cat: '实用工具',
+            url: 'https://xr.bot1.ccwu.cc/', g: ['#7c3aed', '#8b5cf6', '#a78bfa'], glow: '124,58,237',
+            feat: true },
+
+        { name: '临时邮箱', desc: '一次性收信地址', icon: '📧', cat: '实用工具', url: 'https://mail.sunls.de/',
+            g: ['#ec4899', '#f472b6', '#fb7185'], glow: '236,72,153' },
+        { name: '代码托管', desc: '快速粘贴分享文本代码', icon: '📋', cat: '实用工具', url: 'https://paste.c-net.org/',
+            g: ['#ea580c', '#f97316', '#fb923c'], glow: '249,115,22' },
+        { name: '个人图床', desc: '自建图片上传托管', icon: '🖼️', cat: '实用工具', url: 'https://img.ddeed.de/',
+            g: ['#7c3aed', '#a78bfa', '#c084fc'], glow: '167,139,250' },
+        { name: 'IP风险查询', desc: '检测 IP 纯净度与风险评分', icon: '🛡️', cat: '实用工具', url: 'https://ipsuper.com/',
+            g: ['#b91c1c', '#dc2626', '#f97316'], glow: '220,38,38', feat: true },
+
+        { name: 'CF主页', desc: 'Cloudflare 控制台', icon: '☁️', cat: '云与部署',
+            url: 'https://dash.cloudflare.com/6b666f2ffaa54d7ba02fe3c807a2ae4b/home/overview',
+            g: ['#f59e0b', '#fb923c', '#fbbf24'], glow: '245,158,11' },
+        { name: '软件资源', desc: '实用软件与工具导航', icon: '💻', cat: '实用工具',
+            url: 'https://couleurapp.com/', g: ['#0ea5e9', '#6366f1', '#a78bfa'], glow: '14,165,233', feat: true }
+    ];
+
+    var SONG = 'https://streamshare.wireway.ch/download/ihpc626a';
+
+    var grid = document.getElementById('grid');
+    var tabs = document.getElementById('tabs');
+    var empty = document.getElementById('empty');
+    var statLine = document.getElementById('statLine');
+
+    var activeCat = '全部';
+    var keyword = '';
+
+    function randomHex() {
+        return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+    }
+
+    function categories() {
+        var seen = [];
+        SITES.forEach(function(s) { if (seen.indexOf(s.cat) === -1) seen.push(s.cat); });
+        return ['全部'].concat(seen);
+    }
+
+    function renderTabs() {
+        tabs.innerHTML = '';
+        categories().forEach(function(cat) {
+            var btn = document.createElement('button');
+            btn.textContent = cat;
+            btn.className = cat === activeCat ? 'active' : '';
+            btn.onclick = function() { activeCat = cat;
+                renderTabs();
+                renderGrid(); };
+            tabs.appendChild(btn);
+        });
+    }
+
+    function matches(site) {
+        if (activeCat !== '全部' && site.cat !== activeCat) return false;
+        if (!keyword) return true;
+        var k = keyword.toLowerCase();
+        return (site.name + site.desc + site.url + site.cat).toLowerCase().indexOf(k) !== -1;
+    }
+
+    function renderGrid() {
+        var list = SITES.filter(matches);
+        grid.innerHTML = '';
+
+        list.forEach(function(site, i) {
+            var a = document.createElement('a');
+            a.className = 'card' + (site.feat ? ' featured' : '');
+            a.href = site.url;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.title = site.name + ' — ' + site.desc;
+
+            var g = site.rand ? [randomHex(), randomHex(), randomHex()] : site.g;
+            a.style.setProperty('--c1', g[0]);
+            a.style.setProperty('--c2', g[1]);
+            a.style.setProperty('--c3', g[2]);
+            a.style.setProperty('--glow', site.glow);
+            a.style.setProperty('--delay', (-(i * 0.83).toFixed(2)) + 's');
+
+            var icon = document.createElement('div');
+            icon.className = 'card-icon';
+            icon.textContent = site.icon;
+
+            var body = document.createElement('div');
+            body.className = 'card-body';
+
+            var name = document.createElement('span');
+            name.className = 'card-name';
+            name.textContent = site.name;
+
+            var desc = document.createElement('p');
+            desc.className = 'card-desc';
+            desc.textContent = site.desc;
+
+            body.appendChild(name);
+            body.appendChild(desc);
+            a.appendChild(icon);
+            a.appendChild(body);
+            grid.appendChild(a);
+        });
+
+        empty.hidden = list.length > 0;
+        statLine.textContent = '共 ' + SITES.length + ' 个站点 · ' + (categories().length - 1) + ' 个分类';
+    }
+
+    renderTabs();
+    renderGrid();
+
+    var overlay = document.getElementById('searchOverlay');
+    var input = document.getElementById('searchInput');
+
+    function openSearch() { overlay.hidden = false;
+        input.focus();
+        input.select(); }
+
+    function closeSearch() { overlay.hidden = true; }
+
+    document.getElementById('searchBtn').onclick = openSearch;
+    overlay.onclick = function(e) { if (e.target === overlay) closeSearch(); };
+    input.oninput = function() { keyword = input.value.trim();
+        renderGrid(); };
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            overlay.hidden ? openSearch() : closeSearch();
+        } else if (e.key === 'Escape' && !overlay.hidden) {
+            closeSearch();
+        }
+    });
+
+    var themeBtn = document.getElementById('themeBtn');
+    var theme = 'dark';
+    try { theme = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+
+    function applyTheme() {
+        var day = theme === 'light';
+        document.documentElement.classList.toggle('day', day);
+        themeBtn.textContent = day ? '☀️' : '🌙';
+        themeBtn.title = day ? '当前：白天，点击切黑夜' : '当前：黑夜，点击切白天';
+    }
+    applyTheme();
+
+    themeBtn.onclick = function() {
+        theme = (theme === 'light') ? 'dark' : 'light';
+        try { localStorage.setItem('theme', theme); } catch (e) {}
+        applyTheme();
+    };
+
+    function tick() {
+        var n = new Date();
+        var w = ['日', '一', '二', '三', '四', '五', '六'][n.getDay()];
+        var p = function(v) { return ('0' + v).slice(-2); };
+        document.getElementById('dateLine').textContent =
+            n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate()) + ' 星期' + w;
+        document.getElementById('timeLine').textContent =
+            p(n.getHours()) + ':' + p(n.getMinutes()) + ':' + p(n.getSeconds());
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    /* ===== 每日一言 · 轮播 ===== */
+    var QUOTES = [
+        '保持好奇，保持热爱 ✨',
+        '慢慢来，比较快 🐢',
+        '遇事不决，可问春风 🍃',
+        '今天也要好好冲浪 🏄',
+        '心之所向，素履以往 🌙',
+        '别慌，月亮也在大海某处迷茫 🌊',
+        '网络一线牵，珍惜这段缘 📡',
+        '种一棵树最好的时间，是现在 🌱'
+    ];
+    var tickerLine = document.getElementById('tickerLine');
+    var quoteIdx = 0;
+    setInterval(function() {
+        quoteIdx = (quoteIdx + 1) % QUOTES.length;
+        tickerLine.classList.add('is-out');
+        setTimeout(function() {
+            tickerLine.textContent = QUOTES[quoteIdx];
+            tickerLine.classList.remove('is-out');
+            tickerLine.classList.add('is-in');
+            void tickerLine.offsetHeight;
+            tickerLine.classList.remove('is-in');
+        }, 460);
+    }, 3600);
+
+    var audio = document.getElementById('audio');
+    var musicBtn = document.getElementById('musicBtn');
+
+    audio.src = SONG;
+    audio.loop = true;
+    audio.volume = 0.6;
+
+    function syncBtn() {
+        musicBtn.classList.toggle('active', !audio.paused);
+        musicBtn.title = audio.paused ? '播放背景音乐' : '暂停背景音乐';
+    }
+
+    function tryAutoplay() {
+        audio.play().then(syncBtn).catch(function() {
+            var events = ['pointerdown', 'keydown', 'touchstart', 'wheel'];
+            var once = function() {
+                audio.play().then(syncBtn).catch(function(e) {
+                    console.warn('音频播放失败：', e);
+                });
+                events.forEach(function(ev) { document.removeEventListener(ev, once); });
+            };
+            events.forEach(function(ev) {
+                document.addEventListener(ev, once, { passive: true });
+            });
+        });
+    }
+    tryAutoplay();
+
+    musicBtn.onclick = function() {
+        if (audio.paused) {
+            audio.play().then(syncBtn).catch(function(e) { console.warn(e); });
+        } else {
+            audio.pause();
+        }
+    };
+
+    audio.addEventListener('play', syncBtn);
+    audio.addEventListener('pause', syncBtn);
+    syncBtn();
+</script>
+</body>
+</html>
