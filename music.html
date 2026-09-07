@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>音乐台 · 溜溜</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>" />
+<style>
+:root {
+    --bg1:#0b0f1a; --bg2:#12182b; --bg3:#1a1035;
+    --panel:rgba(15,23,42,.55); --border:rgba(99,102,241,.28);
+    --fg:#e2e8f0; --muted:#94a3b8;
+    --title-g:linear-gradient(90deg,#a78bfa,#e879f9,#38bdf8);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+    min-height:100dvh;
+    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 45%,var(--bg3) 100%);
+    color:var(--fg);
+    font-family:-apple-system,'PingFang SC','Nunito',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+}
+.page { max-width:34rem; margin:0 auto; padding:1.4rem 1rem 3rem; }
+
+.top { display:flex; align-items:center; gap:.7rem; margin-bottom:1.3rem; }
+.back {
+    color:var(--muted); text-decoration:none; font-size:.8rem;
+    padding:.4rem .7rem; border:1px solid var(--border); border-radius:.7rem;
+    background:var(--panel); flex-shrink:0;
+}
+.back:hover { color:var(--fg); border-color:#a78bfa; }
+.title {
+    flex:1; font-size:1.15rem; font-weight:800; letter-spacing:.02em;
+    background:var(--title-g); -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+/* 正在播放 */
+.now {
+    position:relative;
+    border:2px solid transparent; border-radius:1.2rem;
+    background:linear-gradient(var(--bg2),var(--bg2)) padding-box, var(--title-g) border-box;
+    padding:1.15rem 1.1rem 1rem;
+    box-shadow:0 12px 40px rgba(0,0,0,.45), 0 0 26px rgba(167,139,250,.18);
+    margin-bottom:1rem;
+}
+.now-row { display:flex; align-items:center; gap:.8rem; }
+.eq { display:flex; align-items:flex-end; gap:3px; height:30px; flex-shrink:0; }
+.eq i {
+    width:4px; border-radius:2px;
+    background:linear-gradient(180deg,#e879f9,#38bdf8);
+    animation:eqBar 1s ease-in-out infinite; transform-origin:bottom;
+}
+.eq i:nth-child(1){height:55%;animation-delay:-.8s;}
+.eq i:nth-child(2){height:100%;animation-delay:-.2s;}
+.eq i:nth-child(3){height:45%;animation-delay:-.5s;}
+.eq i:nth-child(4){height:80%;animation-delay:-1.1s;}
+.eq.paused i { animation-play-state:paused; opacity:.35; }
+@keyframes eqBar { 0%,100%{transform:scaleY(.35);} 50%{transform:scaleY(1);} }
+.now-info { flex:1; min-width:0; }
+.now-name {
+    font-size:1.02rem; font-weight:800; letter-spacing:.02em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.now-sub { font-size:.7rem; color:var(--muted); margin-top:.15rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* 进度条 */
+.seek { margin-top:.9rem; }
+.seek-bar { position:relative; height:5px; border-radius:3px; background:rgba(148,163,184,.22); cursor:pointer; }
+.seek-fill {
+    position:absolute; left:0; top:0; bottom:0; width:0;
+    border-radius:3px; background:linear-gradient(90deg,#a78bfa,#e879f9);
+    box-shadow:0 0 8px rgba(232,121,249,.5);
+}
+.seek-dot {
+    position:absolute; top:50%; width:11px; height:11px; margin:-5.5px 0 0 -5.5px;
+    border-radius:50%; background:#fff; box-shadow:0 0 6px rgba(255,255,255,.7);
+    left:0; opacity:0; transition:opacity .2s;
+}
+.seek-bar:hover .seek-dot { opacity:1; }
+.times {
+    display:flex; justify-content:space-between; font-size:.62rem;
+    color:var(--muted); margin-top:.3rem; font-variant-numeric:tabular-nums;
+}
+
+/* 控制 */
+.ctrls { display:flex; align-items:center; gap:.45rem; margin-top:.85rem; }
+.ctrls button {
+    width:2.35rem; height:2.35rem; border:1px solid var(--border); border-radius:.75rem;
+    background:none; color:var(--fg); font-size:.85rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s, transform .15s;
+}
+.ctrls button:hover { background:rgba(167,139,250,.18); }
+.ctrls button:active { transform:scale(.92); }
+#btnPlay {
+    width:2.8rem; height:2.8rem; font-size:1rem;
+    background:linear-gradient(135deg,#7c3aed,#e879f9);
+    border:none; color:#fff; box-shadow:0 0 14px rgba(232,121,249,.45);
+}
+.ctrls input[type=range] { flex:1; min-width:0; accent-color:#a78bfa; height:3px; cursor:pointer; }
+
+/* 列表 */
+.list-title {
+    font-size:.72rem; font-weight:800; letter-spacing:.14em; color:var(--muted);
+    margin:1.1rem 0 .55rem .2rem;
+}
+.list { display:flex; flex-direction:column; gap:.4rem; }
+.track {
+    display:flex; align-items:center; gap:.65rem;
+    padding:.6rem .7rem; border:1px solid transparent; border-radius:.8rem;
+    cursor:pointer; transition:background .15s, border-color .15s;
+}
+.track:hover { background:rgba(167,139,250,.10); }
+.track.active {
+    background:rgba(167,139,250,.16); border-color:var(--border);
+}
+.track .no {
+    width:1.6rem; height:1.6rem; flex-shrink:0; border-radius:.5rem;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.62rem; font-weight:800; color:var(--muted);
+    background:rgba(148,163,184,.12); font-variant-numeric:tabular-nums;
+}
+.track.active .no {
+    background:linear-gradient(135deg,#7c3aed,#e879f9); color:#fff;
+}
+.track .t-info { flex:1; min-width:0; }
+.track .t-name {
+    font-size:.8rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.track.active .t-name {
+    background:var(--title-g); -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+.track .t-sub { font-size:.62rem; color:var(--muted); margin-top:.08rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.track .t-len { font-size:.62rem; color:var(--muted); flex-shrink:0;
+    font-variant-numeric:tabular-nums; }
+
+.credit {
+    margin-top:1.4rem; font-size:.6rem; color:var(--muted); opacity:.75;
+    text-align:center; line-height:1.6;
+}
+
+@media (prefers-reduced-motion:reduce) {
+    .eq i { animation:none !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+    <div class="top">
+        <a class="back" href="./">← 返回主页</a>
+        <span class="title">🎵 溜溜 · 音乐台</span>
+    </div>
+
+    <div class="now">
+        <div class="now-row">
+            <div class="eq" id="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="now-info">
+                <div class="now-name" id="nowName">未在播放</div>
+                <div class="now-sub" id="nowSub">点击下方列表选歌</div>
+            </div>
+        </div>
+        <div class="seek">
+            <div class="seek-bar" id="seekBar">
+                <div class="seek-fill" id="seekFill"></div>
+                <div class="seek-dot" id="seekDot"></div>
+            </div>
+            <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+        </div>
+        <div class="ctrls">
+            <button id="btnPrev" title="上一首">⏮</button>
+            <button id="btnPlay" title="播放">▶</button>
+            <button id="btnNext" title="下一首">⏭</button>
+            <button id="btnMode" title="循环模式">🔁</button>
+            <input type="range" id="vol" min="0" max="100" value="80" title="音量" />
+        </div>
+    </div>
+
+    <div class="list-title">播放列表</div>
+    <div class="list" id="list"></div>
+
+    <p class="credit">曲目来自 Wikimedia Commons · CC BY 授权 · 作者：PIKASONIC / Infraction / Eternity Arcade / raspberrymusic / Alexi Action / WhiteWhyne / Sappheiros / Tim Derry</p>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+var BASE = 'https://raw.githubusercontent.com/PAzzxb/nav/main/music/';
+var TRACKS = [
+    { name:'Miss You',            sub:'PIKASONIC · Kawaii Bass',       url:BASE+'miss_you.mp3' },
+    { name:'New Start!',          sub:'PIKASONIC · Future Bass',       url:BASE+'new_start.mp3' },
+    { name:'Dance',               sub:'Infraction · Future Pop',       url:BASE+'dance.mp3' },
+    { name:'Lost in a Dream',     sub:'Eternity Arcade · Retro Pop',   url:BASE+'lost_dream.mp3' },
+    { name:'Lofi Hip Hop (Upbeat)',sub:'raspberrymusic · Lofi',        url:BASE+'lofi_upbeat.mp3' },
+    { name:'Retrowave',           sub:'raspberrymusic · Synthwave',    url:BASE+'retrowave.mp3' },
+    { name:'I Am a Robot',        sub:'Alexi Action · Dark Synthwave', url:BASE+'robot.mp3' },
+    { name:'current',             sub:'WhiteWhyne · Phonk',            url:BASE+'current.mp3' },
+    { name:'Perspective',         sub:'Sappheiros · Lofi Hip Hop',     url:BASE+'perspective.mp3' },
+    { name:'COLD LOVE',           sub:'Tim Derry · Electropop',        url:BASE+'cold_love.mp3' }
+];
+var MODES = [
+    { k:'all',  icon:'🔁', tip:'列表循环' },
+    { k:'one',  icon:'🔂', tip:'单曲循环' },
+    { k:'shuf', icon:'🔀', tip:'随机播放' }
+];
+
+var audio = document.getElementById('audio');
+var idx = 0, modeIdx = 0, seeking = false;
+
+function lsGet(k,d){ try{var v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} }
+function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
+
+(function(){
+    var m = lsGet('wo_mpage_mode','all');
+    for (var i=0;i<MODES.length;i++) if (MODES[i].k===m){ modeIdx=i; break; }
+})();
+audio.volume = Math.max(0,Math.min(1,(parseInt(lsGet('wo_mpage_vol','80'),10)||80)/100));
+document.getElementById('vol').value = Math.round(audio.volume*100);
+
+function fmt(t){
+    if (!isFinite(t)) return '0:00';
+    t = Math.floor(t);
+    return Math.floor(t/60) + ':' + ('0'+(t%60)).slice(-2);
+}
+function renderList(){
+    var el = document.getElementById('list');
+    el.innerHTML = '';
+    TRACKS.forEach(function(t,i){
+        var row = document.createElement('div');
+        row.className = 'track' + (i===idx?' active':'');
+        var no = document.createElement('div'); no.className='no'; no.textContent = i+1;
+        var info = document.createElement('div'); info.className='t-info';
+        var nm = document.createElement('div'); nm.className='t-name'; nm.textContent = t.name;
+        var sb = document.createElement('div'); sb.className='t-sub'; sb.textContent = t.sub;
+        info.appendChild(nm); info.appendChild(sb);
+        var len = document.createElement('div'); len.className='t-len'; len.textContent = t.dur||'';
+        row.appendChild(no); row.appendChild(info); row.appendChild(len);
+        row.onclick = function(){ playIdx(i,true); };
+        el.appendChild(row);
+    });
+}
+function renderMode(){
+    var b = document.getElementById('btnMode');
+    b.textContent = MODES[modeIdx].icon; b.title = MODES[modeIdx].tip;
+}
+function syncUI(){
+    var playing = !audio.paused && !audio.ended;
+    document.getElementById('btnPlay').textContent = playing?'⏸':'▶';
+    document.getElementById('btnPlay').title = playing?'暂停':'播放';
+    document.getElementById('eq').classList.toggle('paused',!playing);
+}
+function playIdx(i,force){
+    if (i>=TRACKS.length) i=0;
+    if (i<0) i=TRACKS.length-1;
+    idx = i;
+    audio.src = TRACKS[i].url;
+    document.getElementById('nowName').textContent = TRACKS[i].name;
+    document.getElementById('nowSub').textContent = TRACKS[i].sub;
+    renderList();
+    if (force!==false) audio.play().catch(function(){});
+    syncUI();
+}
+function stepIdx(dir){
+    var n = TRACKS.length;
+    if (MODES[modeIdx].k==='shuf' && n>1){
+        var r = idx;
+        while (r===idx) r = Math.floor(Math.random()*n);
+        return r;
+    }
+    return (idx+dir+n)%n;
+}
+
+document.getElementById('btnPlay').onclick = function(){
+    if (!audio.src){ playIdx(idx,true); return; }
+    if (audio.paused) audio.play().catch(function(){}); else audio.pause();
+};
+document.getElementById('btnPrev').onclick = function(){ playIdx(stepIdx(-1),true); };
+document.getElementById('btnNext').onclick = function(){ playIdx(stepIdx(1),true); };
+document.getElementById('btnMode').onclick = function(){
+    modeIdx = (modeIdx+1)%MODES.length;
+    lsSet('wo_mpage_mode',MODES[modeIdx].k);
+    renderMode();
+};
+document.getElementById('vol').oninput = function(){
+    audio.volume = this.value/100;
+    lsSet('wo_mpage_vol',this.value);
+};
+
+/* 进度条 */
+var seekBar = document.getElementById('seekBar');
+function seekTo(e){
+    var rect = seekBar.getBoundingClientRect();
+    var x = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+    var p = Math.max(0,Math.min(1,x/rect.width));
+    if (isFinite(audio.duration)) audio.currentTime = p*audio.duration;
+}
+var down=false;
+seekBar.addEventListener('pointerdown',function(e){ down=true; seeking=true; seekTo(e); });
+window.addEventListener('pointermove',function(e){ if(down) seekTo(e); });
+window.addEventListener('pointerup',function(){ down=false; });
+audio.addEventListener('timeupdate',function(){
+    if (seeking && down) return;
+    if (isFinite(audio.duration) && audio.duration>0){
+        var p = audio.currentTime/audio.duration*100;
+        document.getElementById('seekFill').style.width = p+'%';
+        document.getElementById('seekDot').style.left = p+'%';
+    }
+    document.getElementById('tCur').textContent = fmt(audio.currentTime);
+    document.getElementById('tDur').textContent = fmt(audio.duration);
+    /* 首次拿到时长后写进列表 */
+    if (isFinite(audio.duration) && !TRACKS[idx].dur){
+        TRACKS[idx].dur = fmt(audio.duration);
+        renderList();
+    }
+});
+audio.addEventListener('ended',function(){
+    if (MODES[modeIdx].k==='one'){ audio.currentTime=0; audio.play().catch(function(){}); }
+    else playIdx(stepIdx(1),true);
+});
+audio.addEventListener('play',syncUI);
+audio.addEventListener('pause',syncUI);
+audio.addEventListener('error',function(){
+    document.getElementById('nowSub').textContent = '加载失败，试试其他曲目';
+});
+
+/* 初始化：随机一首 */
+idx = Math.floor(Math.random()*TRACKS.length);
+renderMode(); renderList();
+document.getElementById('nowName').textContent = TRACKS[idx].name;
+document.getElementById('nowSub').textContent = TRACKS[idx].sub;
+audio.src = TRACKS[idx].url;
+audio.play().catch(function(){
+    var evs = ['pointerdown','keydown','touchstart','wheel'];
+    var once = function(){
+        audio.play().catch(function(){}); syncUI();
+        evs.forEach(function(ev){ document.removeEventListener(ev,once); });
+    };
+    evs.forEach(function(ev){ document.addEventListener(ev,once,{passive:true}); });
+});
+syncUI();
+</script>
+</body>
+</html>
