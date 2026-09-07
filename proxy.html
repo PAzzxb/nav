@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>溜溜 · 代理工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    color: #fff;
+    padding: 16px;
+    min-height: 100vh;
+    /* 炫彩渐变背景 + 流动动画 */
+    background: linear-gradient(
+      135deg,
+      #7c3aed, #a78bfa, #e879f9, #38bdf8, #a78bfa, #7c3aed
+    );
+    background-size: 400% 400%;
+    animation: gradientFlow 18s ease infinite;
+  }
+
+  @keyframes gradientFlow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* 顶部标题栏 */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    max-width: 480px;
+    margin: 0 auto 16px;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+
+  /* 分组容器 —— 半透明毛玻璃，透出背后的炫彩 */
+  .group {
+    background: rgba(30, 25, 40, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 480px;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+
+  /* 分组标题（可点击折叠） */
+  .group-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 8px 0 16px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .group-header .arrow {
+    position: absolute;
+    right: 8px;
+    color: #38bdf8;
+    transition: transform 0.3s;
+  }
+  .group.collapsed .arrow { transform: rotate(180deg); }
+  .group.collapsed .body { display: none; }
+
+  /* 平台切换标签 */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #f0f0f5;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #7c3aed, #e879f9);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(167,139,250,0.5);
+  }
+
+  /* 平台面板：默认隐藏，激活的显示 */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* 卡片列表 */
+  .list { display: flex; flex-direction: column; gap: 12px; }
+
+  /* 单个卡片 */
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .item:hover {
+    background: rgba(255,255,255,0.22);
+    transform: translateY(-1px);
+  }
+  .item .chevron { color: #38bdf8; font-size: 18px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    🛸 溜溜 · 代理工具
+  </div>
+  <a href="./" style="display:flex;justify-content:center;max-width:480px;margin:-6px auto 16px;color:rgba(255,255,255,.85);font-size:13px;text-decoration:none;text-shadow:0 1px 4px rgba(0,0,0,.3);">← 返回主页</a>
+
+  <!-- 分组会由 JS 根据下面的配置自动生成 -->
+  <div id="app"></div>
+
+<script>
+  /* ============================================
+     配置区：只改这里就能增删平台 / 软件
+     ============================================ */
+  const groups = [
+    {
+      title: "代理软件",
+      collapsed: false,
+      platforms: [
+        {
+          os: "WINDOWS",
+          apps: [
+            { name: "v2rayN",          url: "https://github.com/2dust/v2rayN" },
+            { name: "Hiddify",         url: "https://github.com/hiddify/hiddify-next" },
+            { name: "FlClash",         url: "https://github.com/chen08209/FlClash" },
+            { name: "mihomo-party",    url: "https://github.com/mihomo-party-org/mihomo-party" },
+            { name: "Clash Verge Rev", url: "https://github.com/clash-verge-rev/clash-verge-rev" },
+            { name: "Clashmi",         url: "#" },
+            { name: "FlyClash",        url: "#" },
+            { name: "Karing",          url: "https://github.com/KaringX/karing" },
+          ]
+        },
+        {
+          os: "ANDROID",
+          apps: [
+            { name: "v2rayNG",   url: "https://github.com/2dust/v2rayNG" },
+            { name: "ClashMeta", url: "https://github.com/MetaCubeX/ClashMetaForAndroid" },
+            { name: "FlClash",   url: "https://github.com/chen08209/FlClash" },
+            { name: "Clashmi",   url: "#" },
+            { name: "Hiddify",   url: "https://github.com/hiddify/hiddify-next" },
+            { name: "NekoBox",   url: "https://github.com/MatsuriDayo/NekoBoxForAndroid" },
+            { name: "FlyClash",  url: "#" },
+            { name: "Karing",    url: "https://github.com/KaringX/karing" },
+            { name: "Bettbox",   url: "#" },
+            { name: "sing-box",  url: "https://github.com/SagerNet/sing-box" },
+          ]
+        },
+        {
+          os: "IOS",
+          apps: [
+            { name: "Surge",         url: "https://nssurge.com/" },
+            { name: "Shadowrocket",  url: "https://apps.apple.com/app/shadowrocket/id932747118" },
+            { name: "Stash",         url: "https://stash.ws/" },
+            { name: "Hiddify",       url: "https://github.com/hiddify/hiddify-next" },
+            { name: "Loon",          url: "https://apps.apple.com/app/loon/id1373567447" },
+            { name: "Egern",         url: "https://egern.app/" },
+            { name: "Clashmi",       url: "#" },
+            { name: "Karing",        url: "https://github.com/KaringX/karing" },
+            { name: "Quantumult X",  url: "https://apps.apple.com/app/quantumult-x/id1443988620" },
+          ]
+        }
+      ]
+    }
+    // 想加更多分组，在这里继续追加 { title, platforms } 对象即可
+  ];
+
+  /* ============================================
+     渲染逻辑：一般不用改
+     ============================================ */
+  const app = document.getElementById("app");
+
+  groups.forEach((group, gi) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "group" + (group.collapsed ? " collapsed" : "");
+
+    // 标题
+    const header = document.createElement("div");
+    header.className = "group-header";
+    header.innerHTML = `${group.title}<span class="arrow">˄</span>`;
+    header.addEventListener("click", () => groupEl.classList.toggle("collapsed"));
+    groupEl.appendChild(header);
+
+    // 内容主体
+    const body = document.createElement("div");
+    body.className = "body";
+
+    // 平台切换标签
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+
+    // 各平台面板
+    const panels = [];
+
+    group.platforms.forEach((platform, pi) => {
+      // 标签按钮
+      const tab = document.createElement("div");
+      tab.className = "tab" + (pi === 0 ? " active" : "");
+      tab.textContent = platform.os;
+      tabs.appendChild(tab);
+
+      // 对应面板
+      const panel = document.createElement("div");
+      panel.className = "panel" + (pi === 0 ? " active" : "");
+
+      const list = document.createElement("div");
+      list.className = "list";
+      platform.apps.forEach(appItem => {
+        const a = document.createElement("a");
+        a.className = "item";
+        a.href = appItem.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.innerHTML = `<span>${appItem.name}</span><span class="chevron">›</span>`;
+        list.appendChild(a);
+      });
+      panel.appendChild(list);
+
+      // 点击标签切换
+      tab.addEventListener("click", () => {
+        tabs.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        panels.forEach(p => p.classList.remove("active"));
+        tab.classList.add("active");
+        panel.classList.add("active");
+      });
+
+      panels.push(panel);
+    });
+
+    body.appendChild(tabs);
+    panels.forEach(p => body.appendChild(p));
+
+    groupEl.appendChild(body);
+    app.appendChild(groupEl);
+  });
+</script>
+
+</body>
+</html>
