@@ -862,89 +862,6 @@
             .music-panel { right: 14px; bottom: 58px; }
         }
 
-        /* ===== 底部迷你播放条（常驻） ===== */
-        .music-bar {
-            position: fixed;
-            bottom: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 58;
-            width: min(92vw, 430px);
-            display: flex;
-            align-items: center;
-            gap: .55rem;
-            padding: .55rem .7rem;
-            border: 2px solid transparent;
-            border-radius: 1.1rem;
-            background: linear-gradient(var(--bg2), var(--bg2)) padding-box, var(--title-g) border-box;
-            box-shadow: 0 10px 34px rgba(0, 0, 0, .45), 0 0 22px rgba(232, 121, 249, .22);
-            backdrop-filter: blur(12px);
-        }
-        html.day .music-bar {
-            background: linear-gradient(#fff, #fff) padding-box, var(--title-g) border-box;
-        }
-        .music-bar[hidden] { display: none; }
-        .mb-eq { display: flex; align-items: flex-end; gap: 2px; height: 15px; flex-shrink: 0; }
-        .mb-eq i {
-            width: 3px;
-            border-radius: 2px;
-            background: linear-gradient(180deg, #e879f9, #38bdf8);
-            animation: eqBar 1s ease-in-out infinite;
-            transform-origin: bottom;
-        }
-        .mb-eq i:nth-child(1) { height: 55%; animation-delay: -.8s; }
-        .mb-eq i:nth-child(2) { height: 100%; animation-delay: -.2s; }
-        .mb-eq i:nth-child(3) { height: 45%; animation-delay: -.5s; }
-        .mb-eq.paused i { animation-play-state: paused; opacity: .4; }
-        .mb-info { flex: 1; min-width: 0; cursor: pointer; }
-        .mb-name {
-            font-size: .76rem;
-            font-weight: 800;
-            letter-spacing: .02em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            background: var(--title-g);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .mb-sub {
-            font-size: .58rem;
-            color: var(--muted-fg);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: .05rem;
-        }
-        .mb-btn {
-            width: 1.9rem;
-            height: 1.9rem;
-            flex-shrink: 0;
-            border: 1px solid var(--border);
-            border-radius: .6rem;
-            background: none;
-            color: var(--fg);
-            font-size: .72rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background .15s, transform .15s;
-        }
-        .mb-btn:hover { background: rgba(167, 139, 250, .18); }
-        .mb-btn:active { transform: scale(.9); }
-        #mbPlay {
-            background: linear-gradient(135deg, #7c3aed, #e879f9);
-            border: none;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(232, 121, 249, .45);
-        }
-        @media (max-width: 480px) {
-            .music-bar { left: 12px; right: 64px; transform: none; width: auto; bottom: 14px; }
-            .mb-sub { display: none; }
-        }
-
         /* ===== 页脚 ===== */
         footer {
             margin-top: auto;
@@ -1058,8 +975,7 @@
             .brand-sat,
             .brand-ufo,
             .ticker__icon,
-            .mp-eq i,
-            .mb-eq i {
+            .mp-eq i {
                 animation: none !important;
             }
             * {
@@ -1207,19 +1123,6 @@
             曲目来自 Wikimedia Commons，CC BY 授权 · 每次打开随机播放，可在列表点歌
         </div>
     </div>
-</div>
-
-<!-- ===== 底部迷你播放条 ===== -->
-<div class="music-bar" id="musicBar">
-    <div class="mb-eq" id="mbEq" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="mb-info" id="mbInfo" title="展开播放列表">
-        <div class="mb-name" id="mbName">未在播放</div>
-        <div class="mb-sub" id="mbSub">点击展开播放列表</div>
-    </div>
-    <button class="mb-btn" id="mbPrev" title="上一首">⏮</button>
-    <button class="mb-btn" id="mbPlay" title="播放">▶</button>
-    <button class="mb-btn" id="mbNext" title="下一首">⏭</button>
-    <button class="mb-btn" id="mbMore" title="播放列表">☰</button>
 </div>
 
 <!-- 背景音乐 -->
@@ -1477,15 +1380,6 @@
     var mpAddUrl = document.getElementById('mpAddUrl');
     var mpAddName = document.getElementById('mpAddName');
     var mpAddBtn = document.getElementById('mpAddBtn');
-    var musicBar = document.getElementById('musicBar');
-    var mbEq = document.getElementById('mbEq');
-    var mbName = document.getElementById('mbName');
-    var mbSub = document.getElementById('mbSub');
-    var mbPlay = document.getElementById('mbPlay');
-    var mbPrev = document.getElementById('mbPrev');
-    var mbNext = document.getElementById('mbNext');
-    var mbMore = document.getElementById('mbMore');
-    var mbInfo = document.getElementById('mbInfo');
 
     function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
     function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -1511,8 +1405,6 @@
     function renderNow(t, sub) {
         mpNowName.textContent = t ? t.name : '未在播放';
         mpNowSub.textContent = sub || (t ? t.sub : '点击下方列表选歌');
-        mbName.textContent = t ? '♪ ' + t.name : '未在播放';
-        mbSub.textContent = sub ? '点击展开播放列表 · ' + sub : (t ? t.sub || '点击展开播放列表' : '点击展开播放列表');
     }
 
     function renderList() {
@@ -1554,9 +1446,6 @@
         musicBtn.classList.toggle('active', playing);
         musicBtn.title = playing ? '暂停背景音乐' : '播放背景音乐';
         mpEq.classList.toggle('paused', !playing);
-        mbEq.classList.toggle('paused', !playing);
-        mbPlay.textContent = playing ? '⏸' : '▶';
-        mbPlay.title = playing ? '暂停' : '播放';
     }
 
     function playIdx(i, force) {
@@ -1617,7 +1506,7 @@
     document.addEventListener('click', function(e) {
         if (musicPanel.hidden) return;
         if (musicPanel.contains(e.target)) return;
-        if (musicBtn.contains(e.target) || musicBar.contains(e.target)) return;
+        if (musicBtn.contains(e.target)) return;
         closePanel();
     });
     ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function(ev) {
@@ -1626,24 +1515,17 @@
 
     function openPanel() {
         musicPanel.hidden = false;
-        musicBar.hidden = true;
         if (!audio.src) playIdx(trackIdx, false);
         scheduleCollapse();
     }
     function closePanel() {
         musicPanel.hidden = true;
-        musicBar.hidden = false;
         clearTimeout(idleTimer);
     }
     musicBtn.onclick = function() {
         if (musicPanel.hidden) openPanel(); else closePanel();
     };
     mpClose.onclick = closePanel;
-    mbMore.onclick = openPanel;
-    mbInfo.onclick = openPanel;
-    mbPlay.onclick = function() { mpPlay.onclick(); };
-    mbPrev.onclick = function() { playIdx(stepIdx(-1), true); };
-    mbNext.onclick = function() { playIdx(stepIdx(1), true); };
 
     mpAddBtn.onclick = function() {
         var u = (mpAddUrl.value || '').trim();
