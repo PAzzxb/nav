@@ -180,7 +180,7 @@
             color: #4b3d0e;
         }
 
-        /* —— 溜溜自维护 IPTV（置顶高亮） —— */
+        /* —— 第三方直播源 —— */
         .card-own {
             background: linear-gradient(135deg, rgba(124, 58, 237, .92), rgba(232, 121, 249, .92));
             color: #fff;
@@ -221,9 +221,7 @@
         </button>
 
         <!-- ===== 直播源卡片列表 ===== -->
-        <div class="card card-own" data-url="https://raw.githubusercontent.com/PAzzxb/iptv/main/output/result.m3u">🛸 溜溜 IPTV（自维护）<span class="hint">点击复制 · 每日 4 次自动更新 · GitHub 开源</span></div>
-        <div class="card" data-url="https://raw.githubusercontent.com/PAzzxb/iptv/main/output/result.txt">溜溜 IPTV · TXT 格式<span class="hint">点击复制 · 适配 TVBox 等播放器</span></div>
-        <div class="card" data-url="https://live.445569.xyz/live.m3u">IPTV直播源</div>
+        <div class="card card-own" data-url="https://live.445569.xyz/live.m3u">🛸 IPTV直播源<span class="hint">点击复制 · 央视卫视综艺全收录</span></div>
 
         <!-- ★ 原“咖啡体育直播源” → 已改为“体育直播” ★ -->
         <div class="card card-sport" data-url="https://jsnzkpg.de5.net/all.m3u">
@@ -301,7 +299,7 @@
         let isGrabbing = false;
 
         // ★★★ 固定的抓取目标（您指定的地址） ★★★
-        const TARGET_URL = 'https://raw.githubusercontent.com/PAzzxb/iptv/main/output/result.m3u';
+        const TARGET_URL = 'https://live.445569.xyz/live.m3u';
 
         async function performGrab() {
             if (isGrabbing) return;
