@@ -512,14 +512,20 @@ function resolveUrl(it){
            '&stoken='+encodeURIComponent(it.stoken||'')+
            '&description='+encodeURIComponent(it.desc||'');
   var deadline=Date.now()+RESOURCE_TIMEOUT*1000;
+  var lastMsg='';
+  function isDeadError(m){return /失效|取消|删除|违规|封禁|不存在|审核/.test(m)}
   function attempt(){
     return httpPostForm(API+'/api/other/save_url',body).then(function(resp){
       if(resp&&resp.code==200&&resp.data&&resp.data.url)return resp.data;
+      var msg=(resp&&resp.message)||'';
+      if(msg)lastMsg=msg;
+      /* 明确失效类错误：立即失败，不再重试 */
+      if(isDeadError(msg))throw new Error(msg||'该分享已失效');
       /* 后端处理中 → save_status 旁路轮询，失败则重试 save_url */
       return httpPostForm(API+'/api/other/save_status',body).catch(function(){return null}).then(function(st){
         if(st&&st.code==200&&st.data&&st.data.ready&&st.data.resource&&st.data.resource.url)return st.data.resource;
         if(Date.now()<deadline)return new Promise(function(r){setTimeout(r,POLL_INTERVAL)}).then(attempt);
-        throw new Error('资源解析超时，请稍后重试');
+        throw new Error(lastMsg||'资源解析超时，请稍后重试');
       });
     });
   }
