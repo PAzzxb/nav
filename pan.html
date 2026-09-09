@@ -568,7 +568,7 @@ function openDialog(it,autoResolve,errMsg){
   $('mLink').style.display='none';$('mLink').innerHTML='';
   $('mLoad').style.display='';
   $('mPlay').style.display='none';$('mCopy').style.display='none';$('mOpen').style.display='none';
-  $('dlgMsg').style.display='none';
+  $('dlgMsg').style.display='none';$('dlgMsg').textContent='';
   if(errMsg){$('mLoad').style.display='none';$('dlgMsg').style.display='block';$('dlgMsg').textContent=errMsg}
   fmReady().then(function(fm){
     $('mPlay').style.display=(fm&&(fm.play||fm.pan))?'':'none';
