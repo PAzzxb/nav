@@ -1,3 +1,0 @@
-#EXTM3U
-CCTV1,http://1.1.1.1/cctv1
-CCTV2,http://1.1.1.1/cctv2
