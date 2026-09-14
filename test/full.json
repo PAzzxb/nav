@@ -1,0 +1,52 @@
+{
+  "spider": "https://cdn.jsdelivr.net/gh/PAzzxb/nav@main/test/spider.jar;md5;d41d8cd98f00b204e9800998ecf8427e",
+  "wallpaper": "https://cdn.jsdelivr.net/gh/PAzzxb/nav@main/test/wall.jpg",
+  "sites": [
+    {
+      "key": "sub",
+      "name": "子配置站",
+      "type": 3,
+      "api": "csp_XPath",
+      "ext": "https://cdn.jsdelivr.net/gh/PAzzxb/nav@main/test/sub.json"
+    },
+    {
+      "key": "jsonapi",
+      "name": "JSON站",
+      "type": 1,
+      "api": "https://cdn.jsdelivr.net/gh/PAzzxb/nav@main/test/sub.json"
+    }
+  ],
+  "parses": [
+    {
+      "name": "测试解析",
+      "type": 0,
+      "url": "http://jx.a.com/?url=##",
+      "ext": {
+        "flag": [
+          "x"
+        ]
+      }
+    },
+    {
+      "name": "Json扩展",
+      "type": 3,
+      "url": "http://jx.b.com/",
+      "ext": {
+        "header": {
+          "U": "1"
+        },
+        "flag": [
+          "b"
+        ]
+      }
+    }
+  ],
+  "lives": [
+    {
+      "name": "直播",
+      "type": 0,
+      "url": "https://cdn.jsdelivr.net/gh/PAzzxb/nav@main/test/live.txt",
+      "epg": "http://epg.51zmt.top:8000/api/diyp/?ch={name}"
+    }
+  ]
+}
