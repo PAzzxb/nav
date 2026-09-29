@@ -982,6 +982,104 @@
                 transition-duration: .01ms !important;
             }
         }
+
+        /* ===== 私密解锁弹窗 ===== */
+        .vault-box {
+            width: min(92vw, 460px);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 1.1rem;
+            padding: 1.1rem 1.15rem 1.25rem;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .5), 0 0 40px rgba(124, 58, 237, .2);
+        }
+        .vault-head {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-bottom: .9rem;
+        }
+        .vault-lock { font-size: 1.6rem; line-height: 1; }
+        .vault-title { margin: 0; font-size: 1rem; font-weight: 800; color: var(--fg); }
+        .vault-sub { margin: .1rem 0 0; font-size: .66rem; color: var(--muted-fg); }
+        .vault-x {
+            margin-left: auto;
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            width: 1.9rem; height: 1.9rem;
+            border-radius: .55rem;
+            cursor: pointer;
+            font-size: .8rem;
+        }
+        .vault-x:hover { background: rgba(255, 255, 255, .16); }
+        #vaultPwd {
+            width: 100%;
+            box-sizing: border-box;
+            padding: .7rem .85rem;
+            border-radius: .7rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .06);
+            color: var(--fg);
+            font-size: .9rem;
+            letter-spacing: .15em;
+            outline: none;
+        }
+        #vaultPwd:focus { border-color: rgba(124, 58, 237, .7); }
+        .vault-go {
+            width: 100%;
+            margin-top: .65rem;
+            padding: .7rem;
+            border: none;
+            border-radius: .7rem;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: .85rem;
+            color: #fff;
+            background: linear-gradient(135deg, #7c3aed, #a855f7 60%, #38bdf8);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, .4);
+        }
+        .vault-go:active { transform: scale(.98); }
+        .vault-msg {
+            margin: .6rem 0 0;
+            text-align: center;
+            color: #fb7185;
+            font-size: .74rem;
+            font-weight: 700;
+        }
+        .vault-list { display: flex; flex-direction: column; gap: .55rem; }
+        .vault-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .6rem .7rem;
+            border-radius: .7rem;
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(124, 58, 237, .16), rgba(56, 189, 248, .1));
+        }
+        .vault-item-ic { font-size: 1.15rem; flex-shrink: 0; }
+        .vault-item-body { min-width: 0; flex: 1; }
+        .vault-item-name { font-size: .82rem; font-weight: 700; color: var(--fg); }
+        .vault-item-url {
+            font-size: .64rem; color: var(--muted-fg);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .vault-item-btns { display: flex; gap: .35rem; flex-shrink: 0; }
+        .vault-item-btns a, .vault-item-btns button {
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .08);
+            color: var(--fg);
+            border-radius: .5rem;
+            padding: .35rem .5rem;
+            font-size: .66rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .vault-item-btns a:hover, .vault-item-btns button:hover { background: rgba(255, 255, 255, .18); }
+        .vault-item-btns button.copied { background: rgba(16, 185, 129, .35); border-color: rgba(16, 185, 129, .6); }
     </style>
 </head>
 <body>
@@ -1089,6 +1187,27 @@
     </div>
 </div>
 
+<!-- ===== 私密卡片解锁弹窗 ===== -->
+<div class="overlay" id="vaultOverlay" hidden>
+    <div class="vault-box">
+        <div class="vault-head">
+            <span class="vault-lock">🔒</span>
+            <div>
+                <h3 class="vault-title">私密聚合</h3>
+                <p class="vault-sub">输入密码解锁并复制卡片地址</p>
+            </div>
+            <button class="vault-x" id="vaultClose" title="关闭">✕</button>
+        </div>
+        <div id="vaultGate">
+            <input id="vaultPwd" type="password" inputmode="numeric" placeholder="请输入访问密码" autocomplete="off" />
+            <button id="vaultGo" class="vault-go">解锁</button>
+            <p id="vaultMsg" class="vault-msg" hidden>密码错误，无法进入</p>
+        </div>
+        <div id="vaultList" class="vault-list" hidden></div>
+    </div>
+</div>
+
+
 <!-- ===== 右下角主题切换 ===== -->
 <button class="fab-theme" id="themeBtn" title="切换白天/黑夜" aria-label="切换白天/黑夜">🌙</button>
 
@@ -1130,6 +1249,10 @@
 
 <script>
     var SITES = [
+        // ===== 私密（加密） =====
+        { name: '私密聚合', desc: '需密码解锁 · 5 个自建聚合站', icon: '🔒', cat: '私密', url: '#vault',
+            g: ['#334155', '#475569', '#64748b'], glow: '100,116,139', feat: true, vault: true },
+
         // ===== 精品短剧 =====
         { name: '精品短剧', desc: '海量短剧在线免费观看', icon: '🎭', cat: '影视直播', url: 'https://m.xgshort.com/drama',
             g: ['#7c3aed', '#8b5cf6', '#a78bfa'], glow: '124,58,237', feat: true },
@@ -1235,6 +1358,10 @@
             a.target = '_blank';
             a.rel = 'noopener';
             a.title = site.name + ' — ' + site.desc;
+            if (site.vault) {
+                a.target = '_self';
+                a.onclick = function(e) { e.preventDefault(); openVault(); };
+            }
 
             var g = site.rand ? [randomHex(), randomHex(), randomHex()] : site.g;
             a.style.setProperty('--c1', g[0]);
@@ -1285,6 +1412,122 @@
     overlay.onclick = function(e) { if (e.target === overlay) closeSearch(); };
     input.oninput = function() { keyword = input.value.trim();
         renderGrid(); };
+
+    /* ===== 私密卡片解锁（AES-GCM + PBKDF2） ===== */
+    var VAULT_BLOB = {"salt": "ATJLHmjuDJRAdDRaGZ1vHQ==", "iv": "93ggN61T9TxhkncL", "ct": "N/2ipJaFugfQsmM2NfgUTpJYxOGnnCVUANa7IVenB00Kheh+ZC4IW2nMKDWLAmYGnHZFGHjlxbV33EIEDscVZoU/cRf02EiV+tk9/UJ/BGcgeg89CLJNuGhrhWdO5UV1l8HTx+zlhNPd9hSXUWDijmh5UHG6PG07FP1YqVvbk7z3bJ3nS7r74it0BrP2CUusunCAjNzeCwB3D67jL2ULFopmioJh4yTCCPyhEBb1jwoPvRvtYF5jRlWJFGP1fhz/4Bm6YKklrlo3zvCgBQEmW39MSyfquovvVVdtUj/nfpW+lPSbx1YVewuLJPe4DSJflxBW0HDwITfGxWBkX032f2x7/nCaQ9rzt9upd492Axp1M9X9RT8EGWFtZJtvjsAiUwgip/7edfeIiiTZkLfIfYMZhkglYW3akEDU9SH5TTlD0I45lfpLr12gb154mHUb7m7Zm7n5M+oQ51ZjXYhPaEFJwVVp8SnWUUyXgPG3FUM1EPuleRIWaT5F2iD7vOVDot//s8f5x2033sZP9ujjDHPvX02gkiXKTOfrrRNGxQJsijPJ2JALiwEAK74sb3Np/kJJDlwsivT3XLv4i8Gz+r3jsTjHSvmC4wWkyH2+H5nGyPZL2n6VoeQuQq1Jetk8+SgqCevBEnL5tB9jBx7WqPCgdOtIuQjt5blgcDhO+kUH0/ZnwTyqf51nggXaHHwfkBOG7B+9c/WEazu9ma3PxlgmEw1xieyysC9+3sd43/0UkABIsI13B2kDUkdsrXrAsZ024uzclLKIyAjC9dgLTUTlCaxQo8qDZArJZ6O3VezzoVxdGHWDSlJUv/E12p1yMk9Z8afTAou2J2FMy5FB8kCdZSde6WGU185eaPPeuSrYxS33hgVd5oh8t5OFbeSMzuzhkLX0XMEQnhEQLntyR669VQ5NCd5Aie2/ci9jNiD4E2+mBWKRtGG9wSoKtTClploIY+tTFBUqIJlEEt34Rsy7WqJCNBLBKh7n55Oypf7nxiUS6/VTxWmWX3E3DhjD54hgOohomoOEHJpdQr7GjWXdfr2U9tZ29mg6A8DkAwgzVRePVUWWQCVXFE4nsMhkFNQ6yhXrIYAC0CHEYNS1C7qGMsZS0736Ewn2d1wVorN3+OxCk8mVJQ2GKmzForjmMnaJ+MaQ8OFt4IUm6PjyULKjkZ1alyzyI1tNUA7wmaFXnfvEPBftSn47sqCEIFT/hRSka9i6X21gx7Tg+Dl/34n4cFXdKDXdkBGaHZ5wb3XGugpA6lY2Qr1z5lQP5MvNgD0V6WLJiMfhMDAC6d1kjaVNykIbQGRfiNKgR/6kQHupTB7J5mE+Or7k2TyJ3rEkH1rIHrw49ePB0LZ4nLU0vwRoLsLozO8sGPZIJUX3kJMuddXXCbW9ErJvOnm+/4AGLFOsZcNgeLZmfyyljTTcjKBEFCgstbpVixH7k8o="};
+    var vaultOverlay = document.getElementById('vaultOverlay');
+    var vaultPwd = document.getElementById('vaultPwd');
+    var vaultGo = document.getElementById('vaultGo');
+    var vaultMsg = document.getElementById('vaultMsg');
+    var vaultGate = document.getElementById('vaultGate');
+    var vaultListEl = document.getElementById('vaultList');
+
+    function b64ToBytes(b) {
+        var s = atob(b), arr = new Uint8Array(s.length);
+        for (var i = 0; i < s.length; i++) arr[i] = s.charCodeAt(i);
+        return arr;
+    }
+
+    function openVault() {
+        vaultOverlay.hidden = false;
+        vaultGate.hidden = false;
+        vaultListEl.hidden = true;
+        vaultListEl.innerHTML = '';
+        vaultMsg.hidden = true;
+        vaultPwd.value = '';
+        setTimeout(function() { vaultPwd.focus(); }, 50);
+    }
+    function closeVault() { vaultOverlay.hidden = true; }
+
+    async function tryUnlock() {
+        vaultMsg.hidden = true;
+        var pwd = vaultPwd.value;
+        if (!pwd) { return; }
+        try {
+            var enc = new TextEncoder();
+            var baseKey = await crypto.subtle.importKey('raw', enc.encode(pwd), 'PBKDF2', false, ['deriveKey']);
+            var key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: b64ToBytes(VAULT_BLOB.salt), iterations: 100000, hash: 'SHA-256' },
+                baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+            var plain = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: b64ToBytes(VAULT_BLOB.iv) }, key, b64ToBytes(VAULT_BLOB.ct));
+            var sites = JSON.parse(new TextDecoder().decode(plain));
+            renderVault(sites);
+        } catch (err) {
+            vaultMsg.hidden = false;
+            vaultPwd.value = '';
+            vaultPwd.focus();
+        }
+    }
+
+    function renderVault(sites) {
+        vaultGate.hidden = true;
+        vaultListEl.hidden = false;
+        vaultListEl.innerHTML = '';
+        sites.forEach(function(s) {
+            var row = document.createElement('div');
+            row.className = 'vault-item';
+            row.style.background = 'linear-gradient(135deg, ' + s.g[0] + '55, ' + s.g[2] + '33)';
+
+            var ic = document.createElement('span');
+            ic.className = 'vault-item-ic';
+            ic.textContent = s.icon;
+
+            var body = document.createElement('div');
+            body.className = 'vault-item-body';
+            var nm = document.createElement('div');
+            nm.className = 'vault-item-name';
+            nm.textContent = s.name;
+            var url = document.createElement('div');
+            url.className = 'vault-item-url';
+            url.textContent = s.url;
+            body.appendChild(nm);
+            body.appendChild(url);
+
+            var btns = document.createElement('div');
+            btns.className = 'vault-item-btns';
+            var open = document.createElement('a');
+            open.href = s.url;
+            open.target = '_blank';
+            open.rel = 'noopener';
+            open.textContent = '打开';
+            var copy = document.createElement('button');
+            copy.textContent = '复制';
+            copy.onclick = function() {
+                var done = function() {
+                    copy.textContent = '已复制';
+                    copy.classList.add('copied');
+                    setTimeout(function() { copy.textContent = '复制'; copy.classList.remove('copied'); }, 1500);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(s.url).then(done).catch(function() { fallbackCopy(s.url); done(); });
+                } else { fallbackCopy(s.url); done(); }
+            };
+            btns.appendChild(open);
+            btns.appendChild(copy);
+
+            row.appendChild(ic);
+            row.appendChild(body);
+            row.appendChild(btns);
+            vaultListEl.appendChild(row);
+        });
+    }
+
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
+    vaultGo.onclick = tryUnlock;
+    vaultPwd.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryUnlock(); });
+    document.getElementById('vaultClose').onclick = closeVault;
+    vaultOverlay.onclick = function(e) { if (e.target === vaultOverlay) closeVault(); };
 
     document.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
