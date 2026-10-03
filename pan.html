@@ -753,7 +753,7 @@
                 filterBar.style.display = 'flex';
                 chipsContainer.innerHTML = '';
 
-                const filteredCount = currentRawResults.filter(item => allowedTypes.includes(getPureDiskType(item.url))).length;
+                const filteredCount = currentRawResults.filter(item => allowedTypes.includes(getPureDiskType(item.url)) && isValidShareLink(item.url)).length;
                 const allChip = document.createElement('button');
                 allChip.className = 'filter-chip ' + (currentFilterType === 'all' ? 'active' : '');
                 allChip.textContent = '全部 (' + filteredCount + ')';
@@ -765,7 +765,7 @@
                 chipsContainer.appendChild(allChip);
 
                 typesArray.forEach(type => {
-                    const count = currentRawResults.filter(item => getPureDiskType(item.url) === type).length;
+                    const count = currentRawResults.filter(item => getPureDiskType(item.url) === type && isValidShareLink(item.url)).length;
                     const chip = document.createElement('button');
                     chip.className = 'filter-chip ' + (currentFilterType === type ? 'active' : '');
                     chip.textContent = type + ' (' + count + ')';
@@ -792,14 +792,28 @@
                 });
             }
 
+            function isValidShareLink(url) {
+                if (!url) return false;
+                // 只放行百度/夸克/UC 的正常分享链接
+                if (/^https?:\/\/(pan\.baidu\.com|pan\.quark\.cn|drive\.uc\.cn|pan\.uc)/i.test(url)) {
+                    // 校验分享ID存在且长度合理
+                    const m = url.match(/\/s\/([a-zA-Z0-9_-]+)/);
+                    if (!m || m[1].length < 8) return false;
+                    return true;
+                }
+                return false;
+            }
+
             function applyFilterAndRender() {
                 if (!currentRawResults.length) {
                     renderEmptyOrError('empty', currentKeyword);
                     return;
                 }
-                // 默认只保留夸克和百度
+                // 默认只保留夸克/百度/UC 的正常分享链接
                 const allowedTypes = ['百度网盘', '夸克网盘', 'UC网盘'];
-                let filtered = [...currentRawResults].filter(item => allowedTypes.includes(getPureDiskType(item.url)));
+                let filtered = [...currentRawResults]
+                    .filter(item => allowedTypes.includes(getPureDiskType(item.url)))
+                    .filter(item => isValidShareLink(item.url));
                 if (currentFilterType !== 'all') {
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
                 }
@@ -809,7 +823,7 @@
                     return;
                 }
                 renderResultsDirect(filtered);
-                statsArea.innerHTML = '✅ 共 ' + filtered.length + ' 条资源 (已过滤非夸克/百度) · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '夸克+百度' : currentFilterType) + ')';
+                statsArea.innerHTML = '✅ 共 ' + filtered.length + ' 条资源 (已过滤失效链接) · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '夸克+百度+UC' : currentFilterType) + ')';
             }
 
             function renderResultsDirect(resultsArray) {
@@ -895,7 +909,7 @@
                     const types = extractDiskTypesFromResults(currentRawResults);
                     renderFilterBar(types);
                     applyFilterAndRender();
-                    statsArea.innerHTML = '⚡ 缓存命中 · 共 ' + cached.total + ' 条资源 · 支持网盘筛选';
+                    statsArea.innerHTML = '⚡ 缓存命中 · 共 ' + cached.total + ' 条原始资源';
                     return;
                 }
 
@@ -937,7 +951,7 @@
                     const diskTypes = extractDiskTypesFromResults(allResults);
                     renderFilterBar(diskTypes);
                     applyFilterAndRender();
-                    statsArea.innerHTML = '✅ 找到 ' + total + ' 条资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
+                    statsArea.innerHTML = '✅ 找到 ' + total + ' 条原始资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
 
                 } catch (err) {
                     console.error('搜索出错:', err);
