@@ -804,19 +804,21 @@
                 return false;
             }
 
-            function isVideoResource(note) {
+            function isVideoResource(note, keyword) {
                 if (!note) return false;
                 const n = note.toLowerCase();
-                const videoKws = ['视频', 'mp4', 'mkv', 'avi', 'mov', '4k', '1080p', '720p', '蓝光', '高清', '番剧', '动漫', '电影', '短剧', '剧集', '集', '季', '完结', '更新', '竖屏', '微短剧', '喜剧', '剧情', '热门', 'bt', '磁力', 'magnet', '资源名称', '影视', '剧场', '动画', '番'];
-                const txtKws = ['txt', '文本', '文档', 'pdf', 'word', 'excel', '电子书', '小说', '书籍', '教程', '剪辑课', '全流程', '训练营', '课程', '目录'];
-                // 如果命中txt关键词则排除
+                // 排除目录/索引类
+                if (n.includes('目录') || n.includes('更新目录') || n.includes('合集目录')) return false;
+                const txtKws = ['txt', '文本', '文档', 'pdf', 'word', 'excel', '电子书', '小说', '书籍', '教程', '剪辑课', '全流程', '训练营', '课程'];
                 for (const kw of txtKws) {
                     if (n.includes(kw)) return false;
                 }
-                // 必须命中视频关键词
+                const videoKws = ['视频', 'mp4', 'mkv', 'avi', 'mov', '4k', '1080p', '720p', '蓝光', '高清', '番剧', '动漫', '电影', '短剧', '剧集', '集', '季', '完结', '更新', '竖屏', '微短剧', '喜剧', '剧情', '热门', 'bt', '磁力', 'magnet', '资源名称', '影视', '剧场', '动画', '番', '国语', '中字', '刮削', 'webdl', 'bdrip', 'hevc'];
                 for (const kw of videoKws) {
                     if (n.includes(kw)) return true;
                 }
+                // 如果笔记只有关键词本身、没有任何附加信息 → 大概率失效链接
+                if (keyword && n.trim() === keyword.trim().toLowerCase()) return false;
                 return false;
             }
 
@@ -830,8 +832,7 @@
                 let filtered = [...currentRawResults]
                     .filter(item => allowedTypes.includes(getPureDiskType(item.url)))
                     .filter(item => isValidShareLink(item.url))
-                    .filter(item => !String(item.source || '').startsWith('plugin:'))
-                    .filter(item => isVideoResource(item.note));
+                    .filter(item => isVideoResource(item.note, currentKeyword));
                 if (currentFilterType !== 'all') {
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
                 }
