@@ -733,13 +733,16 @@
                     const pure = getPureDiskType(results[i].url);
                     if (pure !== '其他') typesSet[pure] = true;
                 }
-                return ['百度网盘', '阿里云盘', '夸克网盘', '迅雷网盘'].filter(t => typesSet[t]);
+                return ['百度网盘', '夸克网盘'].filter(t => typesSet[t]);
             }
 
             function renderFilterBar(typesArray) {
                 const filterBar = document.getElementById('filterBar');
                 const chipsContainer = document.getElementById('filterChipsContainer');
                 if (!chipsContainer) return;
+                // 只显示夸克和百度
+                const allowedTypes = ['百度网盘', '夸克网盘'];
+                typesArray = (typesArray || []).filter(t => allowedTypes.includes(t));
                 if (!typesArray || typesArray.length === 0) {
                     filterBar.style.display = 'none';
                     return;
@@ -747,9 +750,10 @@
                 filterBar.style.display = 'flex';
                 chipsContainer.innerHTML = '';
 
+                const filteredCount = currentRawResults.filter(item => allowedTypes.includes(getPureDiskType(item.url))).length;
                 const allChip = document.createElement('button');
                 allChip.className = 'filter-chip ' + (currentFilterType === 'all' ? 'active' : '');
-                allChip.textContent = '全部 (' + currentRawResults.length + ')';
+                allChip.textContent = '全部 (' + filteredCount + ')';
                 allChip.addEventListener('click', () => {
                     currentFilterType = 'all';
                     applyFilterAndRender();
@@ -790,7 +794,9 @@
                     renderEmptyOrError('empty', currentKeyword);
                     return;
                 }
-                let filtered = [...currentRawResults];
+                // 默认只保留夸克和百度
+                const allowedTypes = ['百度网盘', '夸克网盘'];
+                let filtered = [...currentRawResults].filter(item => allowedTypes.includes(getPureDiskType(item.url)));
                 if (currentFilterType !== 'all') {
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
                 }
@@ -800,7 +806,7 @@
                     return;
                 }
                 renderResultsDirect(filtered);
-                statsArea.innerHTML = '✅ 共 ' + currentRawResults.length + ' 条资源 · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '全部网盘' : currentFilterType) + ')';
+                statsArea.innerHTML = '✅ 共 ' + filtered.length + ' 条资源 (已过滤非夸克/百度) · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '夸克+百度' : currentFilterType) + ')';
             }
 
             function renderResultsDirect(resultsArray) {
