@@ -753,7 +753,7 @@
                 filterBar.style.display = 'flex';
                 chipsContainer.innerHTML = '';
 
-                const filteredCount = currentRawResults.filter(item => allowedTypes.includes(getPureDiskType(item.url)) && isValidShareLink(item.url)).length;
+                const filteredCount = currentRawResults.filter(item => allowedTypes.includes(getPureDiskType(item.url)) && isValidShareLink(item.url) && isVideoResource(item.note, currentKeyword) && isRelevantTitle(item.note, currentKeyword)).length;
                 const allChip = document.createElement('button');
                 allChip.className = 'filter-chip ' + (currentFilterType === 'all' ? 'active' : '');
                 allChip.textContent = '全部 (' + filteredCount + ')';
@@ -765,7 +765,7 @@
                 chipsContainer.appendChild(allChip);
 
                 typesArray.forEach(type => {
-                    const count = currentRawResults.filter(item => getPureDiskType(item.url) === type && isValidShareLink(item.url)).length;
+                    const count = currentRawResults.filter(item => getPureDiskType(item.url) === type && isValidShareLink(item.url) && isVideoResource(item.note, currentKeyword) && isRelevantTitle(item.note, currentKeyword)).length;
                     const chip = document.createElement('button');
                     chip.className = 'filter-chip ' + (currentFilterType === type ? 'active' : '');
                     chip.textContent = type + ' (' + count + ')';
@@ -822,6 +822,23 @@
                 return false;
             }
 
+            function isRelevantTitle(note, keyword) {
+                if (!note || !keyword) return true;
+                const n = note.trim();
+                const k = keyword.trim();
+                // 模糊联想排除：笔记以关键词开头但后面紧接中文字符（非分隔符）→ 可能是另一部作品
+                // 例如搜"正阳门下"，"正阳门下小女人"应排除
+                const afterKw = n.slice(k.length);
+                if (afterKw.length > 0) {
+                    const firstChar = afterKw[0];
+                    // 如果关键词后紧跟中文、且不是常见分隔符 → 排除
+                    if (/[\u4e00-\u9fff]/.test(firstChar) && !['（', '(', '【', '《', '「', '『', '：', '：', '：'].includes(firstChar)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
             function applyFilterAndRender() {
                 if (!currentRawResults.length) {
                     renderEmptyOrError('empty', currentKeyword);
@@ -832,7 +849,8 @@
                 let filtered = [...currentRawResults]
                     .filter(item => allowedTypes.includes(getPureDiskType(item.url)))
                     .filter(item => isValidShareLink(item.url))
-                    .filter(item => isVideoResource(item.note, currentKeyword));
+                    .filter(item => isVideoResource(item.note, currentKeyword))
+                    .filter(item => isRelevantTitle(item.note, currentKeyword));
                 if (currentFilterType !== 'all') {
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
                 }
@@ -928,7 +946,7 @@
                     const types = extractDiskTypesFromResults(currentRawResults);
                     renderFilterBar(types);
                     applyFilterAndRender();
-                    statsArea.innerHTML = '⚡ 缓存命中 · 共 ' + cached.total + ' 条原始资源';
+                    statsArea.innerHTML = '⚡ 缓存命中 · 共 ' + cached.allResults.length + ' 条资源';
                     return;
                 }
 
@@ -959,6 +977,14 @@
                     }
 
                     const total = data.data.total || allResults.length;
+                    // 去重：同URL只保留第一个
+                    const seen = new Set();
+                    allResults = allResults.filter(item => {
+                        const u = item.url || '';
+                        if (seen.has(u)) return false;
+                        seen.add(u);
+                        return true;
+                    });
                     currentRawResults = allResults;
 
                     cache.set(kw, { allResults, total });
@@ -970,7 +996,7 @@
                     const diskTypes = extractDiskTypesFromResults(allResults);
                     renderFilterBar(diskTypes);
                     applyFilterAndRender();
-                    statsArea.innerHTML = '✅ 找到 ' + total + ' 条原始资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
+                    statsArea.innerHTML = '✅ 找到 ' + allResults.length + ' 条资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
 
                 } catch (err) {
                     console.error('搜索出错:', err);
