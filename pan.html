@@ -838,7 +838,7 @@
                             (password ? '<span class="badge password-badge">🔑 提取码: ' + escapeHtml(password) + '</span>' : '') +
                         '</div>' +
                         (noteDetail && noteDetail !== title ? '<div class="note">📄 ' + escapeHtml(noteDetail.substring(0, 180)) + (noteDetail.length > 180 ? '…' : '') + '</div>' : '') +
-                        '<button class="link-btn" onclick="openDetail(\'' + escapeHtml(url) + '\', \'' + escapeHtml(title) + '\', \'' + panName + '\', \'' + datetime + '\', \'' + escapeHtml(password) + '\')">📂 打开资源链接 →</button>' +
+                        '<button class="link-btn" onclick="tapItem(\'' + escapeHtml(url) + '\', \'' + escapeHtml(title) + '\', \'' + panName + '\', \'' + datetime + '\', \'' + escapeHtml(password) + '\')">📂 打开资源链接 →</button>' +
                     '</div>' +
                     '<div class="footer-info">' +
                         '<span>✨ 来源: ' + escapeHtml(source) + '</span>' +
@@ -940,6 +940,19 @@
                 }
             }
 
+            /* ================= 点击条目：FongMi 优先直跳 ================= */
+            function tapItem(url, title, panName, time, password) {
+                fmReady().then(function(fm) {
+                    if (fm && (fm.play || fm.pan)) {
+                        // App 内：直接调播放器
+                        fmPlay(url, title);
+                        return;
+                    }
+                    // 浏览器：弹窗
+                    openDetail(url, title, panName, time, password);
+                });
+            }
+
             /* ================= 详情弹窗 ================= */
             let curItem = null;
 
@@ -963,9 +976,9 @@
                     document.getElementById('mPlay').style.display = (fm && (fm.play || fm.pan)) ? 'block' : 'none';
                 });
 
-                // 模拟解析真实链接
+                // 显示链接
                 setTimeout(function() {
-                    if (curItem !== { url: url, title: title, panName: panName, time: time, password: password }) return;
+                    if (!curItem || curItem.url !== url) return;
                     document.getElementById('mLink').innerHTML = '<b>🔗 ' + escapeHtml(url) + '</b>';
                     document.getElementById('mLink').style.display = 'block';
                     document.getElementById('mLoad').style.display = 'none';
