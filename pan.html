@@ -595,8 +595,15 @@
 
             /* ================= 配置 ================= */
             const ORIGIN_API = 'https://so.252035.xyz/api/search?kw=';
-            const PROXY_API = 'https://seep.eu.org/';
-            const USE_PROXY = true;
+            const PROXY_POOL = [
+                    'https://seep.eu.org/',
+                    'https://corsproxy.io/?url=',
+                    'https://api.allorigins.win/raw?url=',
+                    'https://api.codetabs.com/v1/proxy?quest=',
+                    'https://cors.eu.org/',
+                    'https://proxy.cors.sh/?url='
+                ];
+                const USE_PROXY = true;
 
             const cache = new Map();
             let currentFilterType = 'all';
@@ -678,15 +685,10 @@
                 return c[name] || '#9aa0ad';
             }
 
-            function buildApiUrl(keyword) {
-                const encodedKw = encodeURIComponent(keyword);
-                if (USE_PROXY) return PROXY_API + ORIGIN_API + encodedKw;
-                return ORIGIN_API + encodedKw;
-            }
-
             async function fetchWithTimeout(url, timeout, retries) {
                 timeout = timeout || 8000;
                 retries = retries || 1;
+                let lastErr = null;
                 for (let i = 0; i <= retries; i++) {
                     try {
                         const controller = new AbortController();
@@ -699,10 +701,30 @@
                         if (!response.ok) throw new Error('HTTP ' + response.status);
                         return await response.json();
                     } catch (err) {
-                        if (i === retries) throw err;
-                        await new Promise(r => setTimeout(r, 500));
+                        lastErr = err;
+                        if (i < retries) {
+                            await new Promise(r => setTimeout(r, 500));
+                        }
                     }
                 }
+                throw lastErr;
+            }
+
+            async function searchWithFallback(kw) {
+                if (!USE_PROXY) {
+                    return fetchWithTimeout(ORIGIN_API + encodeURIComponent(kw), 8000, 1);
+                }
+                for (let pi = 0; pi < PROXY_POOL.length; pi++) {
+                    const proxy = PROXY_POOL[pi];
+                    const url = proxy + ORIGIN_API + encodeURIComponent(kw);
+                    try {
+                        return await fetchWithTimeout(url, 8000, 0);
+                    } catch (err) {
+                        console.warn('代理 ' + proxy + ' 失败:', err.message);
+                        continue;
+                    }
+                }
+                throw new Error('所有代理均不可用');
             }
 
             /* ================= 工具函数 ================= */
@@ -954,8 +976,7 @@
                 showLoading();
 
                 try {
-                    const apiUrl = buildApiUrl(kw);
-                    const data = await fetchWithTimeout(apiUrl, 8000, 1);
+                    const data = await searchWithFallback(kw);
 
                     if (data.code !== 0 || !data.data) {
                         throw new Error(data.message || '接口返回数据异常');
