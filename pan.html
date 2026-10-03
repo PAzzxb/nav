@@ -318,6 +318,8 @@
             text-align: center;
             margin-top: 12px;
             transition: 0.2s;
+            border: none;
+            cursor: pointer;
         }
 
         .link-btn:hover {
@@ -364,6 +366,158 @@
             to { transform: rotate(360deg); }
         }
 
+        /* FongMi 桥接状态条 */
+        #fmBanner {
+            display: none;
+            margin: 14px 0 0;
+            padding: 9px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+        #fmBanner.show { display: block; }
+        #fmBanner.ok {
+            background: #eafaf0;
+            color: #116637;
+            border: 1px solid #b9e6cb;
+        }
+        #fmBanner.no {
+            background: #fdf3e7;
+            color: #8a5a16;
+            border: 1px solid #f3ddba;
+        }
+        #fmBanner .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: 1px;
+        }
+        #fmBanner.ok .dot { background: #16a34a; }
+        #fmBanner.no .dot { background: #d97706; }
+
+        /* 弹窗 */
+        #mask {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(23, 17, 48, 0.55);
+            z-index: 100;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        #mask.show { display: flex; }
+        .modal {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 560px;
+            border-radius: 22px 22px 0 0;
+            padding: 22px 20px 26px;
+            animation: up .22s ease;
+        }
+        @keyframes up {
+            from { transform: translateY(40px); opacity: .4; }
+        }
+        .modal h3 {
+            font-size: 1rem;
+            line-height: 1.5;
+            word-break: break-all;
+            padding-right: 26px;
+        }
+        .x {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            border: none;
+            background: #f1f2f6;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 15px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .minfo {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 10px 0 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+        .linkbox {
+            margin-top: 12px;
+            background: var(--result-bg);
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 11px 13px;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        .linkbox b { color: var(--accent-color); }
+        .mbtns {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .mbtns button {
+            flex: 1;
+            min-width: 110px;
+            height: 46px;
+            border: none;
+            border-radius: 13px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btnPlay {
+            background: var(--accent-color);
+            color: white;
+        }
+        .btnCopy {
+            background: var(--tag-bg);
+            color: var(--text-primary);
+            border: 1.5px solid var(--border-color);
+        }
+        .btnOpen {
+            background: var(--result-bg);
+            color: var(--accent-color);
+            border: 1.5px solid var(--border-color);
+        }
+        .tip {
+            margin-top: 14px;
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+        }
+        .spin2 {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2.5px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: -2px;
+            margin-right: 7px;
+        }
+        #dlgMsg {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #dc2626;
+            display: none;
+            line-height: 1.6;
+        }
+
         @media (max-width: 640px) {
             .container { padding: 16px; padding-top: 80px; }
             .search-header { padding: 24px 20px; }
@@ -385,10 +539,7 @@
         <div class="search-header">
             <h1>全网盘搜</h1>
             <div class="avatar-wrapper">
-                <img src="https://mpimg.cn/view.php/f28da3eac8f392e9fa2ba91723b2bf4c.png" 
-                     alt="头像" 
-                     class="avatar"
-                     onerror="this.onerror=null; this.src='https://via.placeholder.com/80x80?text=Avatar'">
+                <div class="avatar" style="display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);">🛸</div>
             </div>
             <div class="sub">🚀 代理加速 · 智能缓存 · 按盘分类筛选</div>
             <div class="search-box">
@@ -397,6 +548,9 @@
             </div>
             <div id="statsArea" class="stats">✨ 代理加速已启用 · 支持网盘分类筛选</div>
         </div>
+
+        <!-- FongMi 桥接状态条 -->
+        <div id="fmBanner"><span class="dot"></span><span id="fmBannerTxt"></span></div>
 
         <!-- 筛选栏：动态显示网盘类型 -->
         <div id="filterBar" class="filter-bar" style="display: none;">
@@ -414,26 +568,76 @@
         </div>
     </div>
 
+    <!-- 链接弹窗 -->
+    <div id="mask">
+        <div class="modal">
+            <button class="x" id="mClose">✕</button>
+            <h3 id="mTitle"></h3>
+            <div class="minfo">
+                <span class="badge" id="mBadge" style="width:auto;padding:0 10px;height:24px;border-radius:7px">夸克</span>
+                <span id="mTime"></span>
+            </div>
+            <div class="linkbox" id="mLink" style="display:none"></div>
+            <div class="linkbox" id="mLoad" style="text-align:center;color:var(--text-secondary)"><span class="spin2"></span>正在解析真实链接…</div>
+            <div id="dlgMsg"></div>
+            <div class="mbtns" id="mBtns">
+                <button class="btnPlay" id="mPlay" style="display:none">▶ 跳转播放</button>
+                <button class="btnCopy" id="mCopy" style="display:none">复制链接</button>
+                <button class="btnOpen" id="mOpen" style="display:none">打开链接</button>
+            </div>
+            <div class="tip" id="mTip">提示：链接为网盘分享地址，保存到自己的网盘后即可观看完整内容。</div>
+        </div>
+    </div>
+
     <script>
         (function() {
+            'use strict';
+
+            /* ================= 配置 ================= */
             const ORIGIN_API = 'https://so.252035.xyz/api/search?kw=';
             const PROXY_API = 'https://seep.eu.org/';
             const USE_PROXY = true;
 
-            function buildApiUrl(keyword) {
-                const encodedKw = encodeURIComponent(keyword);
-                if (USE_PROXY) {
-                    return PROXY_API + ORIGIN_API + encodedKw;
-                }
-                return ORIGIN_API + encodedKw;
-            }
-
-            const cache = new Map();  // 存储 { allResults, total, diskTypes }
-            let currentFilterType = 'all';      // 'all', '百度网盘', '阿里云盘', '夸克网盘', '迅雷网盘'
-            let currentRawResults = [];           // 当前搜索结果原始数组
+            const cache = new Map();
+            let currentFilterType = 'all';
+            let currentRawResults = [];
             let currentKeyword = '';
 
-            // 网盘类型识别（增强）
+            /* ================= FongMi 桥 ================= */
+            let _fmP = null;
+            function fmReady() {
+                if (_fmP) return _fmP;
+                _fmP = new Promise(function(res) {
+                    if (window.fm) return res(window.fm);
+                    let t = 0;
+                    let iv = setInterval(function() {
+                        t += 80;
+                        if (window.fm || t > 4000) {
+                            clearInterval(iv);
+                            res(window.fm || null);
+                        }
+                    }, 80);
+                });
+                return _fmP;
+            }
+
+            function fmPlay(real, title) {
+                fmReady().then(function(fm) {
+                    if (!fm) return;
+                    var name = panNameByUrl(real);
+                    var code = panCode(name);
+                    if (fm.pan && fm.pan.play) {
+                        fm.pan.play({ type: code, url: real, password: '', title: title })
+                            .catch(function() {
+                                if (fm.play) fm.play(/^magnet:/i.test(real) ? real : ('push://' + real), title);
+                            });
+                        return;
+                    }
+                    if (fm.play) fm.play(/^magnet:/i.test(real) ? real : ('push://' + real), title);
+                });
+            }
+
+            /* ================= 网盘类型 ================= */
             function getDiskType(url) {
                 if (!url) return '🔗 网盘链接';
                 if (url.includes('pan.baidu.com')) return '📀 百度网盘';
@@ -443,7 +647,6 @@
                 return '🔗 网盘链接';
             }
 
-            // 提取纯类型名称（用于筛选匹配）
             function getPureDiskType(url) {
                 const type = getDiskType(url);
                 if (type === '📀 百度网盘') return '百度网盘';
@@ -453,18 +656,86 @@
                 return '其他';
             }
 
-            // 从结果中提取所有出现的网盘类型（去重）
-            function extractDiskTypesFromResults(results) {
-                const typesSet = new Set();
-                for (const item of results) {
-                    const pure = getPureDiskType(item.url);
-                    if (pure !== '其他') typesSet.add(pure);
-                }
-                const sorted = ['百度网盘', '阿里云盘', '夸克网盘', '迅雷网盘'].filter(t => typesSet.has(t));
-                return sorted;
+            function panNameByUrl(u) {
+                u = String(u || '');
+                if (/pan\.quark\.cn/i.test(u)) return '夸克';
+                if (/aliyundrive\.com|alipan\.com/i.test(u)) return '阿里';
+                if (/pan\.baidu\.com|yun\.baidu\.com/i.test(u)) return '百度';
+                if (/pan\.xunlei\.com/i.test(u)) return '迅雷';
+                return '其他';
             }
 
-            // 渲染筛选栏UI
+            function panCode(name) {
+                var m = { '夸克': 'quark', '阿里': 'aliyun', '百度': 'baidu', '迅雷': 'xunlei' };
+                return m[name] || name;
+            }
+
+            function typeColor(name) {
+                var c = { '夸克': '#4f8bff', '阿里': '#ff6a00', '百度': '#06a7ff', '迅雷': '#2f6df0' };
+                return c[name] || '#9aa0ad';
+            }
+
+            function buildApiUrl(keyword) {
+                const encodedKw = encodeURIComponent(keyword);
+                if (USE_PROXY) return PROXY_API + ORIGIN_API + encodedKw;
+                return ORIGIN_API + encodedKw;
+            }
+
+            async function fetchWithTimeout(url, timeout, retries) {
+                timeout = timeout || 8000;
+                retries = retries || 1;
+                for (let i = 0; i <= retries; i++) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), timeout);
+                        const response = await fetch(url, {
+                            signal: controller.signal,
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        clearTimeout(timeoutId);
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        return await response.json();
+                    } catch (err) {
+                        if (i === retries) throw err;
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+            }
+
+            /* ================= 工具函数 ================= */
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr || dateStr.startsWith('0001-01-01')) return '时间未知';
+                try {
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) return dateStr.split('T')[0];
+                    return date.getFullYear() + '-' +
+                        (date.getMonth() + 1).toString().padStart(2, '0') + '-' +
+                        date.getDate().toString().padStart(2, '0');
+                } catch (e) {
+                    return dateStr;
+                }
+            }
+
+            /* ================= 筛选栏 ================= */
+            function extractDiskTypesFromResults(results) {
+                const typesSet = {};
+                for (let i = 0; i < results.length; i++) {
+                    const pure = getPureDiskType(results[i].url);
+                    if (pure !== '其他') typesSet[pure] = true;
+                }
+                return ['百度网盘', '阿里云盘', '夸克网盘', '迅雷网盘'].filter(t => typesSet[t]);
+            }
+
             function renderFilterBar(typesArray) {
                 const filterBar = document.getElementById('filterBar');
                 const chipsContainer = document.getElementById('filterChipsContainer');
@@ -475,22 +746,22 @@
                 }
                 filterBar.style.display = 'flex';
                 chipsContainer.innerHTML = '';
-                // 添加 "全部" 选项
+
                 const allChip = document.createElement('button');
-                allChip.className = `filter-chip ${currentFilterType === 'all' ? 'active' : ''}`;
-                allChip.textContent = `全部 (${currentRawResults.length})`;
+                allChip.className = 'filter-chip ' + (currentFilterType === 'all' ? 'active' : '');
+                allChip.textContent = '全部 (' + currentRawResults.length + ')';
                 allChip.addEventListener('click', () => {
                     currentFilterType = 'all';
                     applyFilterAndRender();
                     updateFilterActiveUI();
                 });
                 chipsContainer.appendChild(allChip);
-                
+
                 typesArray.forEach(type => {
                     const count = currentRawResults.filter(item => getPureDiskType(item.url) === type).length;
                     const chip = document.createElement('button');
-                    chip.className = `filter-chip ${currentFilterType === type ? 'active' : ''}`;
-                    chip.textContent = `${type} (${count})`;
+                    chip.className = 'filter-chip ' + (currentFilterType === type ? 'active' : '');
+                    chip.textContent = type + ' (' + count + ')';
                     chip.addEventListener('click', () => {
                         currentFilterType = type;
                         applyFilterAndRender();
@@ -514,7 +785,6 @@
                 });
             }
 
-            // 应用筛选，重新渲染结果
             function applyFilterAndRender() {
                 if (!currentRawResults.length) {
                     renderEmptyOrError('empty', currentKeyword);
@@ -525,14 +795,12 @@
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
                 }
                 if (filtered.length === 0) {
-                    resultsContainer.innerHTML = `<div class="empty-state">😞 当前筛选“${currentFilterType}”下暂无资源<br>💡 试试其他网盘分类或清除筛选</div>`;
-                    const totalOrigin = currentRawResults.length;
-                    statsArea.innerText = `🔍 找到 ${totalOrigin} 条资源 · 当前筛选显示 0 条 (${currentFilterType})`;
+                    resultsContainer.innerHTML = '<div class="empty-state">😞 当前筛选"' + currentFilterType + '"下暂无资源<br>💡 试试其他网盘分类或清除筛选</div>';
+                    statsArea.innerText = '🔍 找到 ' + currentRawResults.length + ' 条资源 · 当前筛选显示 0 条 (' + currentFilterType + ')';
                     return;
                 }
                 renderResultsDirect(filtered);
-                const totalOrigin = currentRawResults.length;
-                statsArea.innerHTML = `✅ 共 ${totalOrigin} 条资源 · 当前展示 ${filtered.length} 条 (筛选: ${currentFilterType === 'all' ? '全部网盘' : currentFilterType}) · 代理加速已缓存`;
+                statsArea.innerHTML = '✅ 共 ' + currentRawResults.length + ' 条资源 · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '全部网盘' : currentFilterType) + ')';
             }
 
             function renderResultsDirect(resultsArray) {
@@ -545,30 +813,9 @@
                     tip.className = 'stats';
                     tip.style.marginTop = '16px';
                     tip.style.textAlign = 'center';
-                    tip.innerText = `✨ 共 ${resultsArray.length} 条结果，已全部展示`;
+                    tip.innerText = '✨ 共 ' + resultsArray.length + ' 条结果，已全部展示';
                     resultsContainer.appendChild(tip);
                 }
-            }
-
-            function formatDate(dateStr) {
-                if (!dateStr || dateStr.startsWith('0001-01-01')) return '时间未知';
-                try {
-                    const date = new Date(dateStr);
-                    if (isNaN(date.getTime())) return dateStr.split('T')[0];
-                    return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`;
-                } catch(e) {
-                    return dateStr;
-                }
-            }
-
-            function escapeHtml(str) {
-                if (!str) return '';
-                return str.replace(/[&<>]/g, function(m) {
-                    if (m === '&') return '&amp;';
-                    if (m === '<') return '&lt;';
-                    if (m === '>') return '&gt;';
-                    return m;
-                });
             }
 
             function renderCard(item) {
@@ -579,37 +826,35 @@
                 const datetime = item.datetime ? formatDate(item.datetime) : '时间未知';
                 const noteDetail = item.note || '';
                 const diskType = getDiskType(url);
-                const pureType = getPureDiskType(url);
-                
-                return `
-                    <div class="card">
-                        <div class="card-content">
-                            <div class="resource-title">${escapeHtml(title)}</div>
-                            <div class="meta-info">
-                                <span class="badge">${diskType}</span>
-                                <span class="badge">📅 ${datetime}</span>
-                                <span class="badge">📡 ${escapeHtml(source)}</span>
-                                ${password ? `<span class="badge password-badge">🔑 提取码: ${escapeHtml(password)}</span>` : ''}
-                            </div>
-                            ${noteDetail && noteDetail !== title ? `<div class="note">📄 ${escapeHtml(noteDetail.substring(0, 180))}${noteDetail.length > 180 ? '…' : ''}</div>` : ''}
-                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="link-btn">📂 打开资源链接 →</a>
-                        </div>
-                        <div class="footer-info">
-                            <span>✨ 来源: ${escapeHtml(source)}</span>
-                            ${password ? `<span>🔐 密码: ${escapeHtml(password)}</span>` : '<span>🔓 无密码</span>'}
-                        </div>
-                    </div>
-                `;
+                const panName = panNameByUrl(url);
+
+                return '<div class="card" data-url="' + escapeHtml(url) + '" data-title="' + escapeHtml(title) + '" data-password="' + escapeHtml(password) + '" data-source="' + escapeHtml(source) + '">' +
+                    '<div class="card-content">' +
+                        '<div class="resource-title">' + escapeHtml(title) + '</div>' +
+                        '<div class="meta-info">' +
+                            '<span class="badge" style="background:' + typeColor(panName) + '">' + diskType + '</span>' +
+                            '<span class="badge">📅 ' + datetime + '</span>' +
+                            '<span class="badge">📡 ' + escapeHtml(source) + '</span>' +
+                            (password ? '<span class="badge password-badge">🔑 提取码: ' + escapeHtml(password) + '</span>' : '') +
+                        '</div>' +
+                        (noteDetail && noteDetail !== title ? '<div class="note">📄 ' + escapeHtml(noteDetail.substring(0, 180)) + (noteDetail.length > 180 ? '…' : '') + '</div>' : '') +
+                        '<button class="link-btn" onclick="openDetail(\'' + escapeHtml(url) + '\', \'' + escapeHtml(title) + '\', \'' + panName + '\', \'' + datetime + '\', \'' + escapeHtml(password) + '\')">📂 打开资源链接 →</button>' +
+                    '</div>' +
+                    '<div class="footer-info">' +
+                        '<span>✨ 来源: ' + escapeHtml(source) + '</span>' +
+                        (password ? '<span>🔐 密码: ' + escapeHtml(password) + '</span>' : '<span>🔓 无密码</span>') +
+                    '</div>' +
+                '</div>';
             }
 
             function showLoading() {
-                resultsContainer.innerHTML = `<div class="loading"><div class="spinner"></div><div style="margin-top:12px;">🚀 代理加速请求中...</div></div>`;
+                resultsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><div style="margin-top:12px;">🚀 代理加速请求中...</div></div>';
                 document.getElementById('filterBar').style.display = 'none';
             }
 
             function showError(msg) {
-                resultsContainer.innerHTML = `<div class="error-state">⚠️ 请求失败: ${escapeHtml(msg)}<br><br>💡 提示: 代理服务器可能繁忙，请重试或检查网络</div>`;
-                statsArea.innerText = `❌ 请求失败: ${msg}`;
+                resultsContainer.innerHTML = '<div class="error-state">⚠️ 请求失败: ' + escapeHtml(msg) + '<br><br>💡 提示: 代理服务器可能繁忙，请重试或检查网络</div>';
+                statsArea.innerText = '❌ 请求失败: ' + msg;
                 document.getElementById('filterBar').style.display = 'none';
                 currentRawResults = [];
                 currentFilterType = 'all';
@@ -617,63 +862,45 @@
 
             function renderEmptyOrError(state, kw) {
                 if (state === 'empty') {
-                    resultsContainer.innerHTML = `<div class="empty-state">😞 未找到关于 “${escapeHtml(kw)}” 的资源<br>试试其他关键词 (例如: 蜜语纪、短剧、死神来了)</div>`;
-                    statsArea.innerText = `🔍 没有找到与 “${kw}” 相关的结果`;
+                    resultsContainer.innerHTML = '<div class="empty-state">😞 未找到关于 "' + escapeHtml(kw) + '" 的资源<br>试试其他关键词 (例如: 蜜语纪、短剧、死神来了)</div>';
+                    statsArea.innerText = '🔍 没有找到与 "' + kw + '" 相关的结果';
                 }
                 document.getElementById('filterBar').style.display = 'none';
             }
 
-            async function fetchWithTimeout(url, timeout = 8000, retries = 1) {
-                for (let i = 0; i <= retries; i++) {
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), timeout);
-                        const response = await fetch(url, { 
-                            signal: controller.signal, 
-                            headers: { 'Accept': 'application/json' }
-                        });
-                        clearTimeout(timeoutId);
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return await response.json();
-                    } catch (err) {
-                        if (i === retries) throw err;
-                        await new Promise(r => setTimeout(r, 500));
-                    }
-                }
-            }
-
+            /* ================= 搜索 ================= */
             async function searchResources(keyword) {
                 if (!keyword || keyword.trim() === '') {
                     statsArea.innerText = '⚠️ 请输入搜索关键词';
-                    resultsContainer.innerHTML = `<div class="empty-state">📌 请输入电影/剧集/资源名称</div>`;
+                    resultsContainer.innerHTML = '<div class="empty-state">📌 请输入电影/剧集/资源名称</div>';
                     document.getElementById('filterBar').style.display = 'none';
                     return;
                 }
                 const kw = keyword.trim();
                 currentKeyword = kw;
                 currentFilterType = 'all';
-                
+
                 if (cache.has(kw)) {
                     const cached = cache.get(kw);
                     currentRawResults = cached.allResults;
                     const types = extractDiskTypesFromResults(currentRawResults);
                     renderFilterBar(types);
                     applyFilterAndRender();
-                    statsArea.innerHTML = `⚡ 缓存命中 · 共 ${cached.total} 条资源 · 支持网盘筛选`;
+                    statsArea.innerHTML = '⚡ 缓存命中 · 共 ' + cached.total + ' 条资源 · 支持网盘筛选';
                     return;
                 }
-                
-                statsArea.innerText = `🚀 代理加速请求中 · 关键词: ${kw}`;
+
+                statsArea.innerText = '🚀 代理加速请求中 · 关键词: ' + kw;
                 showLoading();
-                
+
                 try {
                     const apiUrl = buildApiUrl(kw);
                     const data = await fetchWithTimeout(apiUrl, 8000, 1);
-                    
+
                     if (data.code !== 0 || !data.data) {
                         throw new Error(data.message || '接口返回数据异常');
                     }
-                    
+
                     const mergedByType = data.data.merged_by_type || {};
                     let allResults = [];
                     for (let type in mergedByType) {
@@ -681,31 +908,28 @@
                             allResults = allResults.concat(mergedByType[type]);
                         }
                     }
-                    
+
                     if (allResults.length === 0) {
                         renderEmptyOrError('empty', kw);
                         currentRawResults = [];
                         document.getElementById('filterBar').style.display = 'none';
                         return;
                     }
-                    
+
                     const total = data.data.total || allResults.length;
                     currentRawResults = allResults;
-                    
-                    // 存入缓存
+
                     cache.set(kw, { allResults, total });
                     if (cache.size > 50) {
                         const firstKey = cache.keys().next().value;
                         cache.delete(firstKey);
                     }
-                    
-                    // 提取网盘类型并渲染筛选栏
+
                     const diskTypes = extractDiskTypesFromResults(allResults);
                     renderFilterBar(diskTypes);
-                    // 默认显示全部
                     applyFilterAndRender();
-                    statsArea.innerHTML = `✅ 找到 ${total} 条资源 · 支持 ${diskTypes.length} 种网盘筛选 (已缓存)`;
-                    
+                    statsArea.innerHTML = '✅ 找到 ' + total + ' 条资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
+
                 } catch (err) {
                     console.error('搜索出错:', err);
                     if (err.name === 'AbortError') {
@@ -716,42 +940,151 @@
                 }
             }
 
-            // 预加载热门词（静默）
-            function preloadHotKeywords() {
-                const hotWords = ['短剧', '电影', '死神来了', '电视剧', '4K'];
-                if ('requestIdleCallback' in window) {
-                    requestIdleCallback(() => {
-                        hotWords.forEach(kw => {
-                            if (!cache.has(kw)) {
-                                fetchWithTimeout(buildApiUrl(kw), 10000, 0).catch(() => {});
-                            }
-                        });
+            /* ================= 详情弹窗 ================= */
+            let curItem = null;
+
+            function openDetail(url, title, panName, time, password) {
+                curItem = { url: url, title: title, panName: panName, time: time, password: password };
+
+                mask.classList.add('show');
+                document.getElementById('mTitle').textContent = title;
+                const badge = document.getElementById('mBadge');
+                badge.textContent = panName;
+                badge.style.background = typeColor(panName);
+                document.getElementById('mTime').textContent = '📅 ' + time;
+                document.getElementById('mLink').style.display = 'none';
+                document.getElementById('mLoad').style.display = 'block';
+                document.getElementById('mPlay').style.display = 'none';
+                document.getElementById('mCopy').style.display = 'none';
+                document.getElementById('mOpen').style.display = 'none';
+                document.getElementById('dlgMsg').style.display = 'none';
+
+                fmReady().then(function(fm) {
+                    document.getElementById('mPlay').style.display = (fm && (fm.play || fm.pan)) ? 'block' : 'none';
+                });
+
+                // 模拟解析真实链接
+                setTimeout(function() {
+                    if (curItem !== { url: url, title: title, panName: panName, time: time, password: password }) return;
+                    document.getElementById('mLink').innerHTML = '<b>🔗 ' + escapeHtml(url) + '</b>';
+                    document.getElementById('mLink').style.display = 'block';
+                    document.getElementById('mLoad').style.display = 'none';
+                    document.getElementById('mCopy').style.display = 'block';
+                    document.getElementById('mOpen').style.display = 'block';
+                    fmReady().then(function(fm) {
+                        if (fm && (fm.play || fm.pan)) {
+                            document.getElementById('mPlay').style.display = 'block';
+                        }
                     });
-                } else {
-                    setTimeout(() => {
-                        hotWords.forEach(kw => {
-                            if (!cache.has(kw)) {
-                                fetchWithTimeout(buildApiUrl(kw), 10000, 0).catch(() => {});
-                            }
-                        });
-                    }, 2000);
-                }
+                }, 800);
             }
 
-            // 绑定UI元素
+            document.getElementById('mClose').addEventListener('click', function() {
+                mask.classList.remove('show');
+                curItem = null;
+            });
+            mask.addEventListener('click', function(e) {
+                if (e.target === mask) {
+                    mask.classList.remove('show');
+                    curItem = null;
+                }
+            });
+
+            document.getElementById('mCopy').addEventListener('click', function() {
+                if (!curItem) return;
+                const url = curItem.url;
+                function ok() {
+                    const msg = document.getElementById('dlgMsg');
+                    msg.textContent = '✅ 链接已复制';
+                    msg.style.color = '#16a34a';
+                    msg.style.display = 'block';
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(ok, function() { fallbackCopy(url, ok); });
+                } else {
+                    fallbackCopy(url, ok);
+                }
+            });
+
+            function fallbackCopy(t, ok) {
+                const ta = document.createElement('textarea');
+                ta.value = t;
+                ta.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); ok(); } catch (e) {}
+                document.body.removeChild(ta);
+            }
+
+            document.getElementById('mOpen').addEventListener('click', function() {
+                if (curItem && curItem.url) window.open(curItem.url, '_blank', 'noopener');
+            });
+
+            document.getElementById('mPlay').addEventListener('click', function() {
+                if (!curItem) return;
+                fmPlay(curItem.url, curItem.title);
+            });
+
+            /* ================= 搜索历史 ================= */
+            function loadHistory() {
+                try {
+                    const h = JSON.parse(localStorage.getItem('panSearchHistory') || '[]');
+                    if (h.length > 0) {
+                        document.getElementById('history').style.display = 'block';
+                        const chips = document.getElementById('hchips');
+                        chips.innerHTML = '';
+                        h.slice(0, 10).forEach(function(kw) {
+                            const chip = document.createElement('button');
+                            chip.className = 'chip';
+                            chip.textContent = kw;
+                            chip.addEventListener('click', function() {
+                                document.getElementById('searchInput').value = kw;
+                                searchResources(kw);
+                            });
+                            chips.appendChild(chip);
+                        });
+                        const clr = document.createElement('button');
+                        clr.className = 'clear';
+                        clr.textContent = '清除历史';
+                        clr.addEventListener('click', function() {
+                            localStorage.removeItem('panSearchHistory');
+                            document.getElementById('history').style.display = 'none';
+                        });
+                        chips.appendChild(clr);
+                    }
+                } catch (e) {}
+            }
+
+            function saveHistory(kw) {
+                try {
+                    let h = JSON.parse(localStorage.getItem('panSearchHistory') || '[]');
+                    h = h.filter(function(k) { return k !== kw; });
+                    h.unshift(kw);
+                    h = h.slice(0, 20);
+                    localStorage.setItem('panSearchHistory', JSON.stringify(h));
+                } catch (e) {}
+            }
+
+            /* ================= 绑定 ================= */
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
-            const resultsContainer = document.getElementById('resultsContainer');
-            const statsArea = document.getElementById('statsArea');
             const clearFilterBtn = document.getElementById('clearFilterBtn');
-            
-            searchBtn.addEventListener('click', () => searchResources(searchInput.value));
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') searchResources(searchInput.value);
+
+            searchBtn.addEventListener('click', function() {
+                const kw = searchInput.value;
+                if (kw.trim()) saveHistory(kw.trim());
+                searchResources(kw);
             });
-            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const kw = searchInput.value;
+                    if (kw.trim()) saveHistory(kw.trim());
+                    searchResources(kw);
+                }
+            });
+
             if (clearFilterBtn) {
-                clearFilterBtn.addEventListener('click', () => {
+                clearFilterBtn.addEventListener('click', function() {
                     if (currentRawResults.length) {
                         currentFilterType = 'all';
                         applyFilterAndRender();
@@ -762,21 +1095,35 @@
                 });
             }
 
+            /* 主题切换 */
             const themeToggle = document.getElementById('themeToggle');
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark');
                 themeToggle.textContent = '☀️';
             }
-            themeToggle.addEventListener('click', () => {
+            themeToggle.addEventListener('click', function() {
                 document.body.classList.toggle('dark');
                 const isDark = document.body.classList.contains('dark');
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 themeToggle.textContent = isDark ? '☀️' : '🌙';
             });
-            
-            window.addEventListener('load', () => {
-                preloadHotKeywords();
+
+            /* FongMi 桥接状态 */
+            fmReady().then(function(fm) {
+                const banner = document.getElementById('fmBanner');
+                const txt = document.getElementById('fmBannerTxt');
+                if (fm && (fm.play || fm.pan)) {
+                    banner.className = 'show ok';
+                    txt.innerHTML = '已连接 <b>FongMi 影视播放器</b> —— 点击搜索结果将直接跳转播放（网盘资源需在 App 内登录对应网盘账号）';
+                } else {
+                    banner.className = 'show no';
+                    txt.innerHTML = '当前为浏览器模式：点击结果获取真实网盘链接，可复制 / 打开。在 FongMi 影视 App 中把首页（WebHome）设为本页地址，即可点击直跳播放';
+                }
             });
+
+            /* 初始化 */
+            loadHistory();
+            statsArea.innerHTML = '✨ 代理加速已启用 · 支持网盘分类筛选';
         })();
     </script>
 </body>
