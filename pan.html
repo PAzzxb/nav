@@ -643,6 +643,7 @@
                 if (url.includes('pan.baidu.com')) return '📀 百度网盘';
                 if (url.includes('aliyundrive.com')) return '☁️ 阿里云盘';
                 if (url.includes('quark.cn')) return '⚛️ 夸克网盘';
+                if (url.includes('uc.cn') || url.includes('pan.uc')) return '📱 UC网盘';
                 if (url.includes('xunlei.com') || url.includes('pan.xunlei.com')) return '⚡ 迅雷网盘';
                 return '🔗 网盘链接';
             }
@@ -652,6 +653,7 @@
                 if (type === '📀 百度网盘') return '百度网盘';
                 if (type === '☁️ 阿里云盘') return '阿里云盘';
                 if (type === '⚛️ 夸克网盘') return '夸克网盘';
+                if (type === '📱 UC网盘') return 'UC网盘';
                 if (type === '⚡ 迅雷网盘') return '迅雷网盘';
                 return '其他';
             }
@@ -661,17 +663,18 @@
                 if (/pan\.quark\.cn/i.test(u)) return '夸克';
                 if (/aliyundrive\.com|alipan\.com/i.test(u)) return '阿里';
                 if (/pan\.baidu\.com|yun\.baidu\.com/i.test(u)) return '百度';
+                if (/uc\.cn|pan\.uc/i.test(u)) return 'uc';
                 if (/pan\.xunlei\.com/i.test(u)) return '迅雷';
                 return '其他';
             }
 
             function panCode(name) {
-                var m = { '夸克': 'quark', '阿里': 'aliyun', '百度': 'baidu', '迅雷': 'xunlei' };
+                var m = { '夸克': 'quark', '阿里': 'aliyun', '百度': 'baidu', 'uc': 'uc', '迅雷': 'xunlei' };
                 return m[name] || name;
             }
 
             function typeColor(name) {
-                var c = { '夸克': '#4f8bff', '阿里': '#ff6a00', '百度': '#06a7ff', '迅雷': '#2f6df0' };
+                var c = { '夸克': '#4f8bff', '阿里': '#ff6a00', '百度': '#06a7ff', 'uc': '#1fa26a', '迅雷': '#2f6df0' };
                 return c[name] || '#9aa0ad';
             }
 
@@ -733,7 +736,7 @@
                     const pure = getPureDiskType(results[i].url);
                     if (pure !== '其他') typesSet[pure] = true;
                 }
-                return ['百度网盘', '夸克网盘'].filter(t => typesSet[t]);
+                return ['百度网盘', '夸克网盘', 'UC网盘'].filter(t => typesSet[t]);
             }
 
             function renderFilterBar(typesArray) {
@@ -741,7 +744,7 @@
                 const chipsContainer = document.getElementById('filterChipsContainer');
                 if (!chipsContainer) return;
                 // 只显示夸克和百度
-                const allowedTypes = ['百度网盘', '夸克网盘'];
+                const allowedTypes = ['百度网盘', '夸克网盘', 'UC网盘'];
                 typesArray = (typesArray || []).filter(t => allowedTypes.includes(t));
                 if (!typesArray || typesArray.length === 0) {
                     filterBar.style.display = 'none';
@@ -795,7 +798,7 @@
                     return;
                 }
                 // 默认只保留夸克和百度
-                const allowedTypes = ['百度网盘', '夸克网盘'];
+                const allowedTypes = ['百度网盘', '夸克网盘', 'UC网盘'];
                 let filtered = [...currentRawResults].filter(item => allowedTypes.includes(getPureDiskType(item.url)));
                 if (currentFilterType !== 'all') {
                     filtered = filtered.filter(item => getPureDiskType(item.url) === currentFilterType);
