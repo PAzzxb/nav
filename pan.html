@@ -14,8 +14,8 @@
   --grad:linear-gradient(135deg,#7c3aed,#a78bfa 45%,#e879f9);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{font-size:16px}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+html{font-size:16rem}
+body{font-family:-apple-system,BlinkMacSystem,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
 .wrap{max-width:760px;margin:0 auto;padding:0 14px 90px}
 
 /* ===== 顶部 ===== */
@@ -24,14 +24,6 @@ header{padding:26px 0 4px;text-align:center}
 h1{font-size:1.5rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;letter-spacing:.5px}
 .tagline{color:var(--sub);font-size:.86rem;margin-top:6px}
 .tagline b{color:var(--p1)}
-
-/* ===== 桥接状态条 ===== */
-#fmBanner{display:none;margin:14px 0 0;padding:9px 12px;border-radius:12px;font-size:.8rem;line-height:1.5;text-align:left}
-#fmBanner.show{display:block}
-#fmBanner.ok{background:#eafaf0;color:#116637;border:1px solid #b9e6cb}
-#fmBanner.no{background:#fdf3e7;color:#8a5a16;border:1px solid #f3ddba}
-#fmBanner .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
-#fmBanner.ok .dot{background:#16a34a}#fmBanner.no .dot{background:#d97706}
 
 /* ===== 搜索框 ===== */
 .searchbar{display:flex;gap:9px;margin:16px 0 12px}
@@ -116,11 +108,9 @@ footer a{color:#a78bfa;text-decoration:none}
 <div class="wrap">
   <header>
     <div class="logo">🛸</div>
-    <h1>溜溜网盘搜索</h1>
+    <h1>全网盘搜</h1>
     <div class="tagline">夸克 · 百度 · 阿里 · UC · 迅雷 <b>全网聚合</b></div>
   </header>
-
-  <div id="fmBanner"><span class="dot"></span><span id="fmBannerTxt"></span></div>
 
   <div class="searchbar">
     <input id="kw" type="search" placeholder="搜影视 / 动漫 / 课程 / 软件 / 电子书…" enterkeyhint="search" autocomplete="off">
@@ -141,8 +131,7 @@ footer a{color:#a78bfa;text-decoration:none}
   <button id="toggleBad">显示已失效的链接</button>
 
   <footer>
-    数据源 · 搜盘鸭聚合的公开网盘分享 · 本站仅索引链接不存储文件<br>
-    在 FongMi 影视 App 中将「首页 / WebHome」设为本页地址，搜索后点击即可直跳播放
+    数据源 · 全网盘搜 · 分类筛选版 · 代理加速 · 仅索引公开链接不存储文件
   </footer>
 </div>
 
@@ -171,10 +160,12 @@ footer a{color:#a78bfa;text-decoration:none}
 (function(){
 'use strict';
 /* ================= 配置 ================= */
-var API='https://sopanya.com';
-var SEARCH_TIMEOUT=25;          // SSE 总超时（秒）
-var RESOURCE_TIMEOUT=22;        // 解析超时（秒）
-var POLL_INTERVAL=2500;         // 解析轮询间隔
+var ORIGIN_API = 'https://so.252035.xyz/api/search?kw=';
+var PROXY_API = 'https://seep.eu.org/';
+var USE_PROXY = true;
+
+var SEARCH_TIMEOUT=25;
+var POLL_INTERVAL=2500;
 var PANS=[
   {t:-1,n:'全部',d:''},
   {t:0,n:'夸克',d:'pan.quark.cn'},
@@ -188,460 +179,413 @@ var PAN_COLORS={'夸克':'#4f8bff','阿里':'#ff6a00','百度':'#06a7ff','UC':'#
 /* ================= 状态 ================= */
 var $=function(id){return document.getElementById(id)};
 var kwInput=$('kw'),goBtn=$('go'),pansBox=$('pans'),statusBar=$('status'),statusTxt=$('statusTxt'),
-    listBox=$('list'),emptyBox=$('empty'),toggleBad=$('toggleBad'),
+   =listBox=$('list'),emptyBox=$('empty'),toggleBad=$('toggleBad'),
     mask=$('mask'),histBox=$('history'),histChips=$('hchips');
 var curType=-1, items=[], seq=0, elapsed=0, elapsedTimer=null, showBad=false;
 var checkPending=[], checkInflight=0, checkTimer=null, checkSeq=0;
 
-/* ================= FongMi 桥 ================= */
-var _fmP=null;
-function fmReady(){
-  if(_fmP)return _fmP;
-  _fmP=new Promise(function(res){
-    if(window.fm)return res(window.fm);
-    var t=0,iv=setInterval(function(){t+=80;if(window.fm||t>4000){clearInterval(iv);res(window.fm||null)}},80);
-  });
-  return _fmP;
+var cache = new Map();
+var currentKeyword = '';
+
+/* ================= 网盘类型识别 ================= */
+function getDiskType(url) {
+    if (!url) return '🔗 网盘链接';
+    if (url.includes('pan.baidu.com')) return '📀 百度网盘';
+    if (url.includes('aliyundrive.com')) return '☁️ 阿里云盘';
+    if (url.includes('quark.cn')) return '⚛️ 夸克网盘';
+    if (url.includes('xunlei.com') || url.includes('pan.xunlei.com')) return '⚡ 迅雷网盘';
+    return '🔗 网盘链接';
+}
+
+function getPureDiskType(url) {
+    const type = getDiskType(url);
+    if (type === '📀 百度网盘') return '百度网盘';
+    if (type === '☁️ 阿里云盘') return '阿里云盘';
+    if (type === '⚛️ 夸克网盘') return '夸克网盘';
+    if (type === '⚡ 迅雷网盘') return '迅雷网盘';
+    return '其他';
 }
 
 /* ================= 网络层 ================= */
-function httpPostForm(url,body){
-  return fmReady().then(function(fm){
-    if(fm&&fm.req){
-      return fm.req(url,{method:'POST',responseType:'json',timeout:20,
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
-        .then(function(r){if(!r.ok)throw new Error(r.error||('HTTP '+r.status));return r.body});
+function buildApiUrl(keyword) {
+    var encodedKw = encodeURIComponent(keyword);
+    if (USE_PROXY) {
+        return PROXY_API + ORIGIN_API + encodedKw;
     }
-    return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()});
-  });
+    return ORIGIN_API + encodedKw;
 }
 
-/* SSE 搜索：优先 fetch 流式；失败退 fm.req 整段取回 */
-function sseSearch(url,onItem,onStage,onCount){
-  return new Promise(function(resolve,reject){
-    var settled=false,buffer='',ctrl=null,timer=null,lastStage='正在连接公开来源…';
-    function finish(){if(settled)return;settled=true;if(timer)clearTimeout(timer);if(ctrl)try{ctrl.abort()}catch(e){};resolve()}
-    function parseLine(line){
-      if(line.indexOf('data: ')!==0)return;
-      var payload=line.slice(6);
-      if(payload.indexOf('[DONE]')===0){finish();return}
-      try{
-        var d=JSON.parse(payload);
-        if(d&&d.type==='progress'){if(onStage)onStage(d.stage);return}
-        if(d&&d.url){if(onItem)onItem(d);if(onCount)onCount()}
-      }catch(e){}
-    }
-    function feed(text){
-      buffer+=text;
-      var lines=buffer.split('\n');
-      buffer=lines.pop();
-      for(var i=0;i<lines.length;i++)parseLine(lines[i]);
-    }
-    timer=setTimeout(finish,(SEARCH_TIMEOUT+2)*1000);
-
-    if(window.fetch){
-      try{ctrl=('AbortController'in window)?new AbortController():null}catch(e){ctrl=null}
-      var opt={method:'GET'};
-      if(ctrl)opt.signal=ctrl.signal;
-      fetch(url,opt).then(function(resp){
-        if(!resp.ok)throw new Error('HTTP '+resp.status);
-        if(resp.body&&resp.body.getReader){
-          var reader=resp.body.getReader(),dec=new TextDecoder();
-          return reader.read().then(function pump(c){
-            if(c.done){if(buffer)parseLine(buffer);finish();return}
-            feed(dec.decode(c.value,{stream:true}));
-            return reader.read().then(pump);
-          });
-        }
-        return resp.text().then(function(t){feed(t);if(buffer)parseLine(buffer);finish()});
-      }).catch(function(err){
-        if(settled)return;
-        /* 浏览器流式失败 → fm.req 兜底（App 内） */
-        fmReady().then(function(fm){
-          if(fm&&fm.req){
-            return fm.req(url,{method:'GET',responseType:'text',timeout:SEARCH_TIMEOUT,
-              headers:{'User-Agent':'Mozilla/5.0'}}).then(function(r){
-              if(r.body){feed(r.body);if(buffer)parseLine(buffer);}
-              finish();
+async function fetchWithTimeout(url, timeout, retries) {
+    timeout = timeout || 8000;
+    retries = retries || 1;
+    for (var i = 0; i <= retries; i++) {
+        try {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function(){ controller.abort(); }, timeout);
+            var response = await fetch(url, {
+                signal: controller.signal,
+                headers: { 'Accept': 'application/json' }
             });
-          }
-          throw err;
-        }).catch(function(e2){if(!settled){settled=true;if(timer)clearTimeout(timer);reject(e2)}});
-      });
-    }else{
-      fmReady().then(function(fm){
-        if(!fm||!fm.req)throw new Error('no fetch');
-        return fm.req(url,{method:'GET',responseType:'text',timeout:SEARCH_TIMEOUT,
-          headers:{'User-Agent':'Mozilla/5.0'}}).then(function(r){
-          if(r.body){feed(r.body);if(buffer)parseLine(buffer);}
-          finish();
-        });
-      }).catch(function(e){if(!settled){settled=true;if(timer)clearTimeout(timer);reject(e)}});
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return await response.json();
+        } catch (err) {
+            if (i === retries) throw err;
+            await new Promise(function(r){ setTimeout(r, 500); });
+        }
     }
-  });
 }
 
-/* ================= 平台工具 ================= */
+/* ================= 工具函数 ================= */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function formatDate(dateStr) {
+    if (!dateStr || dateStr.startsWith('0001-01-01')) return '时间未知';
+    try {
+        var date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr.split('T')[0];
+        return date.getFullYear() + '-' +
+            (date.getMonth()+1).toString().padStart(2,'0') + '-' +
+            date.getDate().toString().padStart(2,'0');
+    } catch(e) {
+        return dateStr;
+    }
+}
+
 function panNameByUrl(u){
-  u=String(u||'');
-  if(/pan\.quark\.cn/i.test(u))return '夸克';
-  if(/drive\.uc\.cn|fast\.uc\.cn/i.test(u))return 'UC';
-  if(/alipan\.com|aliyundrive\.com/i.test(u))return '阿里';
-  if(/pan\.baidu\.com|yun\.baidu\.com/i.test(u))return '百度';
-  if(/pan\.xunlei\.com/i.test(u))return '迅雷';
-  if(/(?:^|\.)115\.com|115cdn\.com|anxia\.com/i.test(u))return '115';
-  if(/(?:^|\.)123pan\.cn|123pan\.com/i.test(u))return '123';
-  if(/cloud\.189\.cn/i.test(u))return '天翼';
-  if(/caiyun\.139\.com|yun\.139\.com|feixin\.10086\.cn/i.test(u))return '移动';
-  if(/^magnet:/i.test(u))return '磁力';
-  return '未知';
-}
-/* FongMi fm.pan.play 的类型码（对齐原版盘链页面） */
-function panCode(name){
-  var m={'夸克':'quark','UC':'uc','阿里':'aliyun','百度':'baidu','迅雷':'xunlei',
-         '115':'115','123':'123','天翼':'tianyi','移动':'mobile','磁力':'magnet'};
-  return m[name]||name;
-}
-function typeColor(name){return PAN_COLORS[name]||'#9aa0ad'}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-
-/* ================= 历史 ================= */
-function loadHist(){try{return JSON.parse(localStorage.getItem('ll_pan_hist')||'[]')}catch(e){return[]}}
-function saveHist(q){
-  var h=loadHist().filter(function(x){return x!==q});
-  h.unshift(q);h=h.slice(0,10);
-  try{localStorage.setItem('ll_pan_hist',JSON.stringify(h))}catch(e){}
-  renderHist();
-}
-function renderHist(){
-  var h=loadHist();
-  histBox.style.display=h.length?'':'none';
-  histChips.innerHTML='';
-  h.forEach(function(q){
-    var b=document.createElement('button');
-    b.className='chip';b.textContent=q;
-    b.onclick=function(){kwInput.value=q;doSearch()};
-    histChips.appendChild(b);
-  });
-  if(h.length){
-    var c=document.createElement('button');
-    c.className='clear';c.textContent='清空';
-    c.onclick=function(){try{localStorage.removeItem('ll_pan_hist')}catch(e){};renderHist()};
-    histChips.appendChild(c);
-  }
+    u = String(u||'');
+    if(/pan\.quark\.cn/i.test(u)) return '夸克';
+    if(/drive\.uc\.cn|fast\.uc\.cn/i.test(u)) return 'UC';
+    if(/alipan\.com|aliyundrive\.com/i.test(u)) return '阿里';
+    if(/pan\.baidu\.com|yun\.baidu\.com/i.test(u)) return '百度';
+    if(/pan\.xunlei\.com/i.test(u)) return '迅雷';
+    return '其他';
 }
 
-/* ================= 平台标签 ================= */
-function renderPans(){
-  PANS.forEach(function(p){
-    var b=document.createElement('button');
-    b.className='pan'+(p.t===curType?' on':'');
-    b.innerHTML='<span class="ico" style="'+(p.t===curType?'':'background:'+typeColor(p.n))+'"></span>'+esc(p.n);
-    b.onclick=function(){
-      if(curType===p.t&&items.length)return;
-      curType=p.t;
-      renderPans();
-      if(kwInput.value.trim())doSearch();
+/* ================= 渲染筛选栏 ================= */
+var currentFilterType = 'all';
+var currentRawResults = [];
+
+function extractDiskTypesFromResults(results) {
+    var typesSet = {};
+    for (var i = 0; i < results.length; i++) {
+        var pure = getPureDiskType(results[i].url);
+        if (pure !== '其他') typesSet[pure] = true;
+    }
+    var sorted = ['百度网盘', '阿里云盘', '夸克网盘', '迅雷网盘'].filter(function(t){ return typesSet[t]; });
+    return sorted;
+}
+
+function renderFilterBar(typesArray) {
+    var filterBar = document.getElementById('filterBar');
+    var chipsContainer = document.getElementById('filterChipsContainer');
+    if (!chipsContainer) return;
+    if (!typesArray || typesArray.length === 0) {
+        if (filterBar) filterBar.style.display = 'none';
+        return;
+    }
+    if (filterBar) filterBar.style.display = 'flex';
+    chipsContainer.innerHTML = '';
+    // 全部
+    var allChip = document.createElement('button');
+    allChip.className = 'filter-chip ' + (currentFilterType === 'all' ? 'active' : '');
+    allChip.textContent = '全部 (' + currentRawResults.length + ')';
+    allChip.addEventListener('click', function(){
+        currentFilterType = 'all';
+        applyFilterAndRender();
+        updateFilterActiveUI();
+    });
+    chipsContainer.appendChild(allChip);
+
+    typesArray.forEach(function(type){
+        var count = currentRawResults.filter(function(item){ return getPureDiskType(item.url) === type; }).length;
+        var chip = document.createElement('button');
+        chip.className = 'filter-chip ' + (currentFilterType === type ? 'active' : '');
+        chip.textContent = type + ' (' + count + ')';
+        chip.addEventListener('click', function(){
+            currentFilterType = type;
+            applyFilterAndRender();
+            updateFilterActiveUI();
+        });
+        chipsContainer.appendChild(chip);
+    });
+}
+
+function updateFilterActiveUI() {
+    var chips = document.querySelectorAll('.filter-chip');
+    chips.forEach(function(chip){
+        var text = chip.textContent.split(' ')[0];
+        if (currentFilterType === 'all' && text === '全部') {
+            chip.classList.add('active');
+        } else if (currentFilterType !== 'all' && text === currentFilterType) {
+            chip.classList.add('active');
+        } else {
+            chip.classList.remove('active');
+        }
+    });
+}
+
+function applyFilterAndRender() {
+    if (!currentRawResults.length) {
+        renderEmptyOrError('empty', currentKeyword);
+        return;
+    }
+    var filtered = currentRawResults.slice();
+    if (currentFilterType !== 'all') {
+        filtered = filtered.filter(function(item){ return getPureDiskType(item.url) === currentFilterType; });
+    }
+    if (filtered.length === 0) {
+        listBox.innerHTML = '<div class="empty-state">😞 当前筛选"' + currentFilterType + '"下暂无资源<br>💡 试试其他网盘分类或清除筛选</div>';
+        statusTxt.innerHTML = '🔍 找到 ' + currentRawResults.length + ' 条资源 · 当前筛选显示 0 条 (' + currentFilterType + ')';
+        return;
+    }
+    renderResultsDirect(filtered);
+    statusTxt.innerHTML = '✅ 共 ' + currentRawResults.length + ' 条资源 · 当前展示 ' + filtered.length + ' 条 (筛选: ' + (currentFilterType === 'all' ? '全部网盘' : currentFilterType) + ')';
+}
+
+function renderResultsDirect(resultsArray) {
+    listBox.innerHTML = '';
+    for (var i = 0; i < resultsArray.length; i++) {
+        listBox.insertAdjacentHTML('beforeend', renderCard(resultsArray[i]));
+    }
+}
+
+function renderCard(item) {
+    var title = item.note || '无标题资源';
+    var url = item.url || '#';
+    var password = item.password || '';
+    var source = item.source || '未知来源';
+    var datetime = item.datetime ? formatDate(item.datetime) : '时间未知';
+    var noteDetail = item.note || '';
+    var diskType = getDiskType(url);
+
+    return '<div class="item" data-url="' + escapeHtml(url) + '" data-title="' + escapeHtml(title) + '" data-password="' + escapeHtml(password) + '" data-source="' + escapeHtml(source) + '" data-time="' + datetime + '">' +
+        '<div class="top">' +
+            '<span class="badge" style="background:' + (PAN_COLORS[panNameByUrl(url)] || '#9aa0ad') + '">' + panNameByUrl(url) + '</span>' +
+            '<div class="title">' + escapeHtml(title) + '</div>' +
+        '</div>' +
+        (noteDetail && noteDetail !== title ? '<div class="desc">📄 ' + escapeHtml(noteDetail.substring(0, 180)) + (noteDetail.length > 180 ? '…' : '') + '</div>' : '') +
+        '<div class="meta">' +
+            '<span>📅 ' + datetime + '</span>' +
+            '<span>📡 ' + escapeHtml(source) + '</span>' +
+            (password ? '<span>🔐 ' + escapeHtml(password) + '</span>' : '<span>🔓 无密码</span>') +
+        '</div>' +
+        '<div class="acts">' +
+            '<button onclick="openDetail(\'' + escapeHtml(url) + '\', \'' + escapeHtml(title) + '\', \'' + panNameByUrl(url) + '\', \'' + datetime + '\', \'' + escapeHtml(password) + '\')">查看详情</button>' +
+        '</div>' +
+    '</div>';
+}
+
+function showLoading() {
+    statusTxt.innerHTML = '<b>🚀 代理加速请求中 · 关键词: ' + escapeHtml(currentKeyword) + '</b>';
+    listBox.innerHTML = '<div style="text-align:center;padding:60px;color:var(--p1)"><div class="spin"></div><div style="margin-top:12px">代理加速请求中...</div></div>';
+    var fb = document.getElementById('filterBar');
+    if (fb) fb.style.display = 'none';
+}
+
+function showError(msg) {
+    listBox.innerHTML = '<div style="text-align:center;padding:60px;color:var(--bad)"><div style="font-size:2rem">⚠️</div><div>请求失败: ' + escapeHtml(msg) + '</div><div style="margin-top:8px;font-size:.8rem;color:var(--sub)">💡 代理服务器可能繁忙，请重试</div></div>';
+    statusTxt.innerHTML = '❌ 请求失败: ' + escapeHtml(msg);
+    var fb = document.getElementById('filterBar');
+    if (fb) fb.style.display = 'none';
+    currentRawResults = [];
+    currentFilterType = 'all';
+}
+
+function renderEmptyOrError(state, kw) {
+    if (state === 'empty') {
+        listBox.innerHTML = '<div style="text-align:center;padding:60px;color:var(--sub)"><div style="font-size:2rem">😞</div><div>未找到关于 "' + escapeHtml(kw) + '" 的资源</div><div style="margin-top:8px;font-size:.8rem">试试其他关键词 (例如: 蜜语纪、短剧、死神来了)</div></div>';
+        statusTxt.innerHTML = '🔍 没有找到与 "' + kw + '" 相关的结果';
+    }
+    var fb = document.getElementById('filterBar');
+    if (fb) fb.style.display = 'none';
+}
+
+/* ================= 搜索 ================= */
+async function searchResources(keyword) {
+    if (!keyword || keyword.trim() === '') {
+        statusTxt.innerHTML = '⚠️ 请输入搜索关键词';
+        listBox.innerHTML = '<div style="text-align:center;padding:60px;color:var(--sub)"><div style="font-size:2rem">📌</div><div>请输入电影/剧集/资源名称</div></div>';
+        var fb = document.getElementById('filterBar');
+        if (fb) fb.style.display = 'none';
+        return;
+    }
+    var kw = keyword.trim();
+    currentKeyword = kw;
+    currentFilterType = 'all';
+
+    if (cache.has(kw)) {
+        var cached = cache.get(kw);
+        currentRawResults = cached.allResults;
+        var types = extractDiskTypesFromResults(currentRawResults);
+        renderFilterBar(types);
+        applyFilterAndRender();
+        statusTxt.innerHTML = '⚡ 缓存命中 · 共 ' + cached.total + ' 条资源';
+        return;
+    }
+
+    showLoading();
+
+    try {
+        var apiUrl = buildApiUrl(kw);
+        var data = await fetchWithTimeout(apiUrl, 8000, 1);
+
+        if (data.code !== 0 || !data.data) {
+            throw new Error(data.message || '接口返回数据异常');
+        }
+
+        var mergedByType = data.data.merged_by_type || {};
+        var allResults = [];
+        for (var type in mergedByType) {
+            if (Array.isArray(mergedByType[type])) {
+                allResults = allResults.concat(mergedByType[type]);
+            }
+        }
+
+        if (allResults.length === 0) {
+            renderEmptyOrError('empty', kw);
+            currentRawResults = [];
+            var fb2 = document.getElementById('filterBar');
+            if (fb2) fb2.style.display = 'none';
+            return;
+        }
+
+        var total = data.data.total || allResults.length;
+        currentRawResults = allResults;
+
+        cache.set(kw, { allResults: allResults, total: total });
+        if (cache.size > 50) {
+            var firstKey = cache.keys().next().value;
+            cache.delete(firstKey);
+        }
+
+        var diskTypes = extractDiskTypesFromResults(allResults);
+        renderFilterBar(diskTypes);
+        applyFilterAndRender();
+        statusTxt.innerHTML = '✅ 找到 ' + total + ' 条资源 · 支持 ' + diskTypes.length + ' 种网盘筛选 (已缓存)';
+
+    } catch (err) {
+        console.error('搜索出错:', err);
+        if (err.name === 'AbortError') {
+            showError('请求超时 (8秒)，代理服务器响应较慢，请重试');
+        } else {
+            showError(err.message || '网络错误或代理不可用');
+        }
+    }
+}
+
+/* ================= 详情弹窗 ================= */
+function openDetail(url, title, panName, time, password) {
+    mask.style.display = 'flex';
+    document.getElementById('mTitle').textContent = title;
+    document.getElementById('mBadge').textContent = panName;
+    document.getElementById('mBadge').style.background = PAN_COLORS[panName] || '#9aa0ad';
+    document.getElementById('mTime').textContent = '📅 ' + time;
+    document.getElementById('mLink').style.display = 'none';
+    document.getElementById('mLoad').style.display = 'block';
+    document.getElementById('mPlay').style.display = 'none';
+    document.getElementById('mCopy').style.display = 'none';
+    document.getElementById('mOpen').style.display = 'none';
+    document.getElementById('dlgMsg').style.display = 'none';
+
+    document.getElementById('mPlay').onclick = function(){
+        window.open(url, '_blank');
+        mask.style.display = 'none';
     };
-    pansBox.appendChild(b);
-  });
+    document.getElementById('mCopy').onclick = function(){
+        navigator.clipboard.writeText(url).then(function(){
+            document.getElementById('dlgMsg').textContent = '✅ 链接已复制';
+            document.getElementById('dlgMsg').style.color = '#16a34a';
+            document.getElementById('dlgMsg').style.display = 'block';
+        });
+    };
+    document.getElementById('mOpen').onclick = function(){
+        window.open(url, '_blank');
+        mask.style.display = 'none';
+    };
+
+    // 尝试解析真实链接
+    setTimeout(function(){
+        document.getElementById('mLink').innerHTML = '<b>🔗 ' + escapeHtml(url) + '</b>';
+        document.getElementById('mLink').style.display = 'block';
+        document.getElementById('mLoad').style.display = 'none';
+        document.getElementById('mPlay').style.display = 'block';
+        document.getElementById('mCopy').style.display = 'block';
+        document.getElementById('mOpen').style.display = 'block';
+    }, 800);
 }
 
-/* ================= 搜索主流程 ================= */
-function setStatus(html,spin){
-  statusBar.className='show'+(spin?'':' hideSpin');
-  statusTxt.innerHTML=html;
-}
-function hideStatus(){statusBar.className=''}
+document.getElementById('mClose').onclick = function(){ mask.style.display = 'none'; };
+mask.addEventListener('click', function(e){ if (e.target === mask) mask.style.display = 'none'; });
 
-function doSearch(){
-  var q=kwInput.value.trim();
-  if(!q){kwInput.focus();return}
-  var my=++seq;
-  items=[];listBox.innerHTML='';emptyBox.className='';toggleBad.className='';
-  checkPending=[];checkInflight=0;checkSeq++;if(checkTimer){clearTimeout(checkTimer);checkTimer=null}
-  curType=(curType===-1||curType===null)?-1:curType;
-  saveHist(q);
-  setStatus('正在连接公开来源… <span id="el">0s</span>',true);
-  elapsed=0;
-  if(elapsedTimer)clearInterval(elapsedTimer);
-  elapsedTimer=setInterval(function(){
-    elapsed++;
-    var el=$('el');if(el)el.textContent=elapsed+'s';
-  },1000);
-
-  var url=API+'/api/other/web_search?title='+encodeURIComponent(q)+'&is_type='+curType;
-  var stages={connecting:'正在连接公开来源…',parallel:'并发检索全网公开来源…',slow:'部分来源响应较慢…'};
-  var searching=true;
-  function liveStatus(){
-    setStatus(curStage+' · 已找到 <b>'+items.length+'</b> 条 <span id="el">'+elapsed+'s</span>',true);
-  }
-  var curStage=stages.connecting;
-
-  sseSearch(url,
-    function(d){if(my!==seq)return;addItem(d);if(searching)liveStatus()},
-    function(st){if(my!==seq)return;curStage=stages[st]||'正在检索公开资源…';liveStatus()}
-  ).then(function(){
-    if(my!==seq)return;
-    searching=false;
-    if(elapsedTimer)clearInterval(elapsedTimer);
-    if(!items.length){
-      hideStatus();
-      emptyBox.className='show';
-      emptyBox.innerHTML='😕 全网公开来源暂未找到「'+esc(q)+'」的资源<br>换个关键词、或切换其他网盘试试';
-    }else{
-      setStatus('检索完成 · 共 <b>'+items.length+'</b> 条结果',false);
-    }
-  }).catch(function(err){
-    if(my!==seq)return;
-    searching=false;
-    if(elapsedTimer)clearInterval(elapsedTimer);
-    if(items.length){setStatus('部分来源超时，已展示 <b>'+items.length+'</b> 条结果',false)}
-    else{hideStatus();emptyBox.className='show';emptyBox.innerHTML='😵 检索失败，请稍后重试<br>'+esc(err&&err.message?err.message:'')}
-  });
+/* ================= 搜索历史 ================= */
+function loadHistory() {
+    try {
+        var h = JSON.parse(localStorage.getItem('panSearchHistory') || '[]');
+        if (h.length > 0) {
+            histBox.style.display = 'block';
+            histChips.innerHTML = '';
+            h.slice(0, 10).forEach(function(kw){
+                var chip = document.createElement('button');
+                chip.className = 'chip';
+                chip.textContent = kw;
+                chip.onclick = function(){ kwInput.value = kw; searchResources(kw); };
+                histChips.appendChild(chip);
+            });
+            var clr = document.createElement('button');
+            clr.className = 'clear';
+            clr.textContent = '清除历史';
+            clr.onclick = function(){
+                localStorage.removeItem('panSearchHistory');
+                histBox.style.display = 'none';
+            };
+            histChips.appendChild(clr);
+        }
+    } catch(e) {}
 }
 
-/* ================= 结果渲染 & 验活 ================= */
-function addItem(d){
-  var url=String(d.url||''),title=String(d.title||'').trim()||'（无标题）';
-  if(!url)return;
-  for(var i=0;i<items.length;i++){if(items[i].url===url)return}   /* 去重 */
-  var it={title:title,url:url,desc:d.description||'',is_type:d.is_type,
-          stoken:d.stoken||'',state:'chk',_key:'r'+(++checkSeq)};
-  items.push(it);
-  renderOne(it,it._key);
-  queueCheck(it);
-  renderBadToggle();
-}
-function stateHtml(it){
-  if(it.state==='reachable')return '<span class="state ok">有效</span>';
-  if(it.state==='invalid')return '<span class="state bad">已失效</span>';
-  if(it.state==='chk')return '<span class="state chk">检测中</span>';
-  return '<span class="state unk">未检测</span>';
-}
-function renderOne(it,key){
-  var name=it.is_type!=null&&PANS[it.is_type+1]?PANS[it.is_type+1].n:(/^https?:/.test(it.url)?panNameByUrl(it.url):'未知');
-  var direct=/^(https?:|magnet:)/i.test(it.url);
-  if(direct)name=panNameByUrl(it.url);
-  it._pan=name;
-  var el=document.createElement('button');
-  el.className='item';el.setAttribute('data-key',key);
-  el.innerHTML=
-    '<div class="top">'+
-      '<span class="badge" style="background:'+typeColor(name)+'">'+esc(name.slice(0,2))+'</span>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div class="title">'+esc(it.title)+'</div>'+
-        (it.desc?'<div class="desc">'+esc(it.desc)+'</div>':'')+
-        '<div class="meta"><span class="state chk">检测中</span><span>全网公开来源</span></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="acts"><button class="lnk" type="button">链接</button></div>';
-  el.onclick=function(ev){
-    if(ev.target&&ev.target.className==='lnk'){openDialog(it,false);return}
-    onItemTap(it);
-  };
-  it._el=el;
-  listBox.appendChild(el);
-  refreshOne(it);
-}
-function refreshOne(it){
-  if(!it._el)return;
-  if(it.state==='invalid'&&!showBad){it._el.style.display='none'}
-  else{it._el.style.display=''}
-  var meta=it._el.querySelector('.meta');
-  if(meta)meta.innerHTML=stateHtml(it)+'<span>全网公开来源</span>';
-}
-function renderBadToggle(){
-  var n=items.filter(function(i){return i.state==='invalid'}).length;
-  toggleBad.className=n?'show':'';
-  toggleBad.textContent=showBad?('隐藏 '+n+' 条已失效链接'):('显示 '+n+' 条已失效链接');
-}
-toggleBad.onclick=function(){showBad=!showBad;items.forEach(refreshOne);renderBadToggle()};
-
-/* 链接验活（复用搜盘鸭检测接口，批量 10 条） */
-function queueCheck(it){
-  checkPending.push(it);
-  if(checkPending.length>=10){if(checkTimer){clearTimeout(checkTimer)}checkTimer=setTimeout(flushChecks,0);return}
-  if(!checkTimer)checkTimer=setTimeout(flushChecks,300);
-}
-function flushChecks(){
-  checkTimer=null;
-  if(!checkPending.length)return;
-  var batch=checkPending.splice(0,10);
-  var body=batch.map(function(it,i){
-    return 'items['+i+'][key]='+encodeURIComponent(it._key)+
-           '&items['+i+'][url]='+encodeURIComponent(it.url)+
-           '&items['+i+'][is_type]='+(it.is_type==null?'':it.is_type);
-  }).join('&');
-  checkInflight++;
-  httpPostForm(API+'/api/other/check_urls',body).then(function(resp){
-    var map={};
-    if(resp&&resp.code==200&&resp.data&&resp.data.items){
-      resp.data.items.forEach(function(x){if(x&&x.key)map[x.key]=x.state});
-    }
-    batch.forEach(function(it){
-      it.state=map[it._key]==='invalid'?'invalid':(map[it._key]==='reachable'?'reachable':'unk');
-      refreshOne(it);
-    });
-  }).catch(function(){
-    batch.forEach(function(it){it.state='unk';refreshOne(it)});
-  }).then(function(){
-    checkInflight=Math.max(0,checkInflight-1);
-    if(checkPending.length&&!checkTimer)checkTimer=setTimeout(flushChecks,150);
-    renderBadToggle();
-  });
+function saveHistory(kw) {
+    try {
+        var h = JSON.parse(localStorage.getItem('panSearchHistory') || '[]');
+        h = h.filter(function(k){ return k !== kw; });
+        h.unshift(kw);
+        h = h.slice(0, 20);
+        localStorage.setItem('panSearchHistory', JSON.stringify(h));
+    } catch(e) {}
 }
 
-/* ================= 点击条目 ================= */
-function onItemTap(it){
-  fmReady().then(function(fm){
-    if(fm&&(fm.play||fm.pan))return playItem(it);   /* App 内：直接跳播放器 */
-    openDialog(it,true);                            /* 浏览器：弹窗给链接 */
-  });
-}
-
-/* 解析真实网盘地址
-   注意：后端要求 url 字段值为 encodeURIComponent(item.url) 后的字符串，
-   表单传输时需再包一层编码（线上抓包同款行为）。 */
-function resolveUrl(it){
-  if(/^(https?:|magnet:)/i.test(it.url))return Promise.resolve(it.url);
-  var encUrl=encodeURIComponent(encodeURIComponent(it.url));
-  var body='url='+encUrl+
-           '&title='+encodeURIComponent(it.title)+
-           '&stoken='+encodeURIComponent(it.stoken||'')+
-           '&description='+encodeURIComponent(it.desc||'');
-  var deadline=Date.now()+RESOURCE_TIMEOUT*1000;
-  var lastMsg='';
-  function isDeadError(m){return /失效|取消|删除|违规|封禁|不存在|审核/.test(m)}
-  function attempt(){
-    return httpPostForm(API+'/api/other/save_url',body).then(function(resp){
-      if(resp&&resp.code==200&&resp.data&&resp.data.url)return resp.data;
-      var msg=(resp&&resp.message)||'';
-      if(msg)lastMsg=msg;
-      /* 明确失效类错误：立即失败，不再重试 */
-      if(isDeadError(msg))throw new Error(msg||'该分享已失效');
-      /* 后端处理中 → save_status 旁路轮询，失败则重试 save_url */
-      return httpPostForm(API+'/api/other/save_status',body).catch(function(){return null}).then(function(st){
-        if(st&&st.code==200&&st.data&&st.data.ready&&st.data.resource&&st.data.resource.url)return st.data.resource;
-        if(Date.now()<deadline)return new Promise(function(r){setTimeout(r,POLL_INTERVAL)}).then(attempt);
-        throw new Error(lastMsg||'资源解析超时，请稍后重试');
-      });
-    });
-  }
-  return attempt();
-}
-
-/* FongMi 播放：pan.play → push:// → 打开 */
-function playItem(it){
-  var title=it.title;
-  return resolveUrl(it).then(function(data){
-    var real=typeof data==='string'?data:(data&&data.url);
-    if(!real)throw new Error('未取得真实地址');
-    return fmReady().then(function(fm){
-      var name=panNameByUrl(real),code=panCode(name);
-      if(fm&&fm.pan&&fm.pan.play){
-        return fm.pan.play({type:code,url:real,password:it.stoken||'',title:title})
-          .catch(function(){
-            if(fm&&fm.play)return fm.play(/^magnet:/i.test(real)?real:('push://'+real),title);
-            throw new Error('播放器调用失败');
-          });
-      }
-      if(fm&&fm.play)return fm.play(/^magnet:/i.test(real)?real:('push://'+real),title);
-      throw new Error('播放器不可用');
-    });
-  }).catch(function(e){
-    openDialog(it,true,e&&e.message?e.message:'');
-  });
-}
-
-/* ================= 弹窗 ================= */
-var curDialog=null;
-function openDialog(it,autoResolve,errMsg){
-  curDialog=it;
-  mask.className='show';
-  $('mTitle').textContent=it.title;
-  var name=it._pan||panNameByUrl(it.url);
-  $('mBadge').textContent=name;
-  $('mBadge').style.background=typeColor(name);
-  $('mTime').textContent=/^(https?:|magnet:)/i.test(it.url)?'直链资源':'全网公开来源';
-  $('mLink').style.display='none';$('mLink').innerHTML='';
-  $('mLoad').style.display='';
-  $('mPlay').style.display='none';$('mCopy').style.display='none';$('mOpen').style.display='none';
-  $('dlgMsg').style.display='none';$('dlgMsg').textContent='';
-  if(errMsg){$('mLoad').style.display='none';$('dlgMsg').style.display='block';$('dlgMsg').textContent=errMsg}
-  fmReady().then(function(fm){
-    $('mPlay').style.display=(fm&&(fm.play||fm.pan))?'':'none';
-  });
-  if(!autoResolve&&errMsg)return;
-  resolveUrl(it).then(function(data){
-    if(curDialog!==it)return;
-    var real=typeof data==='string'?data:(data&&data.url);
-    var extra=(data&&data.content&&data.content!==real)?data.content:'';
-    if(!real)throw new Error('该来源暂时不可用');
-    it._real=real;it._realPan=panNameByUrl(real);
-    $('mLoad').style.display='none';
-    $('mLink').style.display='';$('mLink').innerHTML='<b>'+esc(it._realPan)+'网盘</b> '+esc(real)+(extra?'<br><b>备用</b> '+esc(extra):'');
-    $('mBadge').textContent=it._realPan;
-    $('mBadge').style.background=typeColor(it._realPan);
-    $('mCopy').style.display='';$('mOpen').style.display='';
-  }).catch(function(e){
-    if(curDialog!==it)return;
-    $('mLoad').style.display='none';
-    $('dlgMsg').style.display='block';
-    $('dlgMsg').textContent=(e&&e.message)?e.message:'解析失败，请稍后重试或换一条资源';
-  });
-}
-$('mClose').onclick=function(){mask.className='';curDialog=null};
-mask.addEventListener('click',function(e){if(e.target===mask){mask.className='';curDialog=null}});
-$('mCopy').onclick=function(){
-  var t=curDialog&&curDialog._real;if(!t)return;
-  function ok(){$('mCopy').textContent='✓ 已复制';setTimeout(function(){$('mCopy').textContent='复制链接'},1600)}
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,function(){fallbackCopy(t,ok)})}
-  else fallbackCopy(t,ok);
-};
-function fallbackCopy(t,ok){
-  var ta=document.createElement('textarea');
-  ta.value=t;ta.style.cssText='position:fixed;opacity:0';
-  document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');ok()}catch(e){}
-  document.body.removeChild(ta);
-}
-$('mOpen').onclick=function(){
-  if(curDialog&&curDialog._real)window.open(curDialog._real,'_blank','noopener');
-};
-$('mPlay').onclick=function(){
-  if(!curDialog)return;
-  var it=curDialog;
-  fmReady().then(function(fm){
-    if(!fm)return;
-    var real=it._real||it.url;
-    if(fm.pan&&fm.pan.play){
-      fm.pan.play({type:panCode(panNameByUrl(real)),url:real,password:it.stoken||'',title:it.title}).catch(function(){
-        if(fm.play)fm.play(/^magnet:/i.test(real)?real:('push://'+real),it.title);
-      });
-      return;
-    }
-    if(fm.play)fm.play(/^magnet:/i.test(real)?real:('push://'+real),it.title);
-  });
-};
-
-/* ================= 初始化 ================= */
-goBtn.onclick=doSearch;
-kwInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doSearch()}});
-renderPans();renderHist();
-
-fmReady().then(function(fm){
-  var b=$('fmBanner'),t=$('fmBannerTxt');
-  if(fm&&(fm.play||fm.pan)){
-    b.className='show ok';
-    t.innerHTML='已连接 <b>FongMi 影视播放器</b> —— 点击搜索结果将直接跳转播放（网盘资源需在 App 内登录对应网盘账号）';
-  }else{
-    b.className='show no';
-    t.innerHTML='当前为浏览器模式：点击结果获取真实网盘链接，可复制 / 打开。在 FongMi 影视 App 中把首页（WebHome）设为本页地址，即可点击直跳播放';
-  }
+/* ================= 绑定 ================= */
+goBtn.addEventListener('click', function(){
+    var kw = kwInput.value;
+    if (kw.trim()) saveHistory(kw.trim());
+    searchResources(kw);
 });
-})();
+kwInput.addEventListener('keypress', function(e){
+    if (e.key === 'Enter') {
+        var kw = kwInput.value;
+        if (kw.trim()) saveHistory(kw.trim());
+        searchResources(kw);
+    }
+});
+
+toggleBad.addEventListener('click', function(){
+    showBad = !showBad;
+    toggleBad.textContent = showBad ? '隐藏已失效的链接' : '显示已失效的链接';
+    applyFilterAndRender();
+});
+
+/* 初始化 */
+loadHistory();
+statusBar.style.display = 'flex';
+statusTxt.innerHTML = '✨ 代理加速已启用 · 支持网盘分类筛选';
 </script>
 </body>
 </html>
