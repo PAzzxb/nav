@@ -1248,6 +1248,22 @@
 <audio id="audio" preload="auto"></audio>
 
 <script>
+    // ===== 后台 API 配置 =====
+    var API_BASE = 'https://pazzxb-nav-admin.lbw88846.workers.dev';
+    
+    // 默认配置
+    var CONFIG = {
+        brand: '溜溜导航',
+        copyright: '© 2026 溜溜导航',
+        friends: [
+            { name: '追剧么指南', url: 'https://zhuiju.me', icon: '🎬', g: ['#ff0080', '#40e0d0', '#8a2be2'], glow: '255,0,128' },
+            { name: 'CFETD 导航', url: 'https://bestcf.pages.dev/#proxyip', icon: '🌐', g: ['#f59e0b', '#fbbf24', '#fcd34d'], glow: '245,158,11' },
+            { name: '公益聚合订阅', url: 'https://660.660696.xyz/', icon: '❤️', g: ['#0284c7', '#0ea5e9', '#38bdf8'], glow: '14,165,233' },
+            { name: '裤佬官网', url: 'https://jsnzkpg.com', icon: '🧑‍💻', g: ['#4c1d95', '#d97706', '#fbbf24'], glow: '76,29,149' }
+        ]
+    };
+    
+    // 默认站点数据（API 失败时使用）
     var SITES = [
         // ===== 私密（加密） =====
         { name: '私密聚合', desc: '需密码解锁 · 5 个自建聚合站', icon: '🔒', cat: '私密', url: '#vault',
@@ -1844,6 +1860,64 @@
             });
         });
     })();
+
+    // ===== 后台 API 加载数据 =====
+    async function loadNavData() {
+        try {
+            var response = await fetch(API_BASE + '/api/data');
+            if (!response.ok) throw new Error('API 请求失败');
+            var data = await response.json();
+            
+            if (data.sites && data.sites.length > 0) {
+                SITES = data.sites;
+            }
+            if (data.config) {
+                CONFIG = Object.assign({}, CONFIG, data.config);
+            }
+            
+            renderTabs();
+            renderGrid();
+            renderFriends();
+            updateConfig();
+            
+            console.log('✓ 从后台加载数据成功，共 ' + SITES.length + ' 个站点');
+        } catch (e) {
+            console.warn('⚠ API 加载失败，使用本地默认数据:', e);
+        }
+    }
+    
+    // 渲染友情链接（从 CONFIG 更新）
+    function renderFriends() {
+        var box = document.querySelector('.friend-links');
+        if (!box) return;
+        
+        box.innerHTML = '';
+        (CONFIG.friends || []).forEach(function(f) {
+            var a = document.createElement('a');
+            a.className = 'friend-btn';
+            a.href = f.url;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.style.setProperty('--c1', (f.g && f.g[0]) || '#7c3aed');
+            a.style.setProperty('--c2', (f.g && f.g[1]) || '#a78bfa');
+            a.style.setProperty('--c3', (f.g && f.g[2]) || '#38bdf8');
+            a.style.setProperty('--glow', f.glow || '124,58,237');
+            a.innerHTML = '<span class="fb-icon">' + (f.icon || '🔗') + '</span>' + f.name;
+            box.appendChild(a);
+        });
+    }
+    
+    // 更新站点配置（品牌名、版权）
+    function updateConfig() {
+        var brandEl = document.querySelector('.brand-name');
+        if (brandEl && CONFIG.brand) brandEl.textContent = CONFIG.brand;
+        
+        var copyrightEl = document.querySelector('.copyright');
+        if (copyrightEl && CONFIG.copyright) copyrightEl.textContent = CONFIG.copyright;
+    }
+    
+    // 启动时加载后台数据
+    loadNavData();
 </script>
 </body>
 </html>
