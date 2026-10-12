@@ -133,6 +133,35 @@
             }
         }
 
+        /* ===== 落雪特效 ===== */
+        .snow-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .snowflake {
+            position: absolute;
+            top: -20px;
+            color: #fff;
+            text-shadow: 0 0 4px rgba(255,255,255,.55);
+            user-select: none;
+            animation: snowFall linear forwards;
+        }
+        @keyframes snowFall {
+            0% {
+                transform: translate3d(0, 0, 0) rotate(0deg);
+                opacity: 0;
+            }
+            8% { opacity: 1; }
+            92% { opacity: 1; }
+            100% {
+                transform: translate3d(var(--sx), 110vh, 0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
         .page {
             max-width: 64rem;
             min-height: 100dvh;
@@ -1086,6 +1115,7 @@
 
     <div class="star-layer star-layer--1" aria-hidden="true"></div>
     <div class="star-layer star-layer--2" aria-hidden="true"></div>
+    <div class="snow-layer" id="snowLayer" aria-hidden="true"></div>
 
     <div class="page">
 
@@ -1920,6 +1950,47 @@
     
     // 启动时加载后台数据
     loadNavData();
+
+    /* ===== 落雪特效（纯 CSS + JS，无外部依赖） ===== */
+    (function () {
+        var layer = document.getElementById('snowLayer');
+        if (!layer) return;
+        var chars = ['❄', '❄️', ' Flake', '•', '·', '⋆'];
+        var count = Math.min(70, Math.floor(window.innerWidth / 18));
+        var flakes = [];
+        var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function makeFlake() {
+            var el = document.createElement('span');
+            el.className = 'snowflake';
+            el.textContent = chars[Math.floor(Math.random() * chars.length)];
+            var size = 0.8 + Math.random() * 1.4;
+            el.style.fontSize = (size * 1.1) + 'rem';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.opacity = (0.4 + Math.random() * 0.5).toFixed(2);
+            var dur = 8 + Math.random() * 9;
+            var sway = (Math.random() - 0.5) * 60;
+            el.style.animationDuration = dur + 's';
+            el.style.setProperty('--sx', sway + 'px');
+            el.style.animationDelay = (-Math.random() * dur) + 's';
+            layer.appendChild(el);
+            flakes.push(el);
+            el.addEventListener('animationend', function () {
+                if (el.parentNode === layer) layer.removeChild(el);
+            });
+        }
+
+        for (var i = 0; i < count; i++) makeFlake();
+
+        var lastSpawn = 0;
+        window.addEventListener('scroll', function () {
+            if (prefersReduced) return;
+            var now = performance.now();
+            if (now - lastSpawn < 400) return;
+            lastSpawn = now;
+            makeFlake();
+        });
+    })();
 </script>
 </body>
 </html>
