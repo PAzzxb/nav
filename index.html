@@ -145,9 +145,10 @@
             position: absolute;
             top: -20px;
             color: #fff;
+            -webkit-text-fill-color: #fff;
             text-shadow: 0 0 4px rgba(255,255,255,.55);
             user-select: none;
-            animation: snowFall linear forwards;
+            animation: snowFall linear infinite;
         }
         @keyframes snowFall {
             0% {
@@ -1958,7 +1959,7 @@
     (function () {
         var layer = document.getElementById('snowLayer');
         if (!layer) return;
-        var chars = ['❄', '❄️', '❄'];
+        var chars = ['❄'];
         var count = Math.min(70, Math.floor(window.innerWidth / 18));
         var flakes = [];
         var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1978,21 +1979,9 @@
             el.style.animationDelay = (-Math.random() * dur) + 's';
             layer.appendChild(el);
             flakes.push(el);
-            el.addEventListener('animationend', function () {
-                if (el.parentNode === layer) layer.removeChild(el);
-            });
         }
 
         for (var i = 0; i < count; i++) makeFlake();
-
-        var lastSpawn = 0;
-        window.addEventListener('scroll', function () {
-            if (prefersReduced) return;
-            var now = performance.now();
-            if (now - lastSpawn < 400) return;
-            lastSpawn = now;
-            makeFlake();
-        });
     })();
 </script>
 </body>
