@@ -120,27 +120,30 @@ function parseProxyLine(line) {
   };
 }
 
-async function loadProxies() {
+function loadProxies() {
   grid.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 正在拉取代理列表...</div>';
 
-  try {
-    const resp = await fetch(PROXY_SOURCE + '?t=' + Date.now(), { cache: 'no-store' });
-    const rawText = await resp.text();
-
-    const lines = rawText.split('\n').filter(line => {
-      if (!line.startsWith('socks5://')) return false;
-      if (line.includes('X.')) return false;
-      return true;
-    });
-
-    allProxies = lines.map(parseProxyLine).filter(Boolean);
-    totalCount.textContent = allProxies.length;
-    updateTime.textContent = '更新时间: ' + new Date().toLocaleTimeString('zh-CN');
-
-    renderList();
-  } catch (e) {
-    grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>获取数据失败: ' + e.message + '</p></div>';
-  }
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', PROXY_SOURCE + '?t=' + Date.now(), true);
+  xhr.onload = function() {
+    if (xhr.status !== 200) {
+      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>请求失败: HTTP ' + xhr.status + '</p></div>';
+      return;
+    }
+    try {
+      var data = JSON.parse(xhr.responseText);
+      allProxies = data.proxies || [];
+      totalCount.textContent = allProxies.length;
+      updateTime.textContent = '更新时间: ' + new Date().toLocaleTimeString('zh-CN');
+      renderList();
+    } catch (e) {
+      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>解析数据失败: ' + e.message + '</p></div>';
+    }
+  };
+  xhr.onerror = function() {
+    grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>网络错误，无法加载代理数据</p></div>';
+  };
+  xhr.send();
 }
 
 function renderList() {
