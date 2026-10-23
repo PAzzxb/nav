@@ -69,88 +69,56 @@
   </div>
 
   <div class="topbar">
-    <div class="stats">
-      共 <span id="totalCount">0</span> 个节点
-    </div>
+    <div class="stats">共 <span id="totalCount">0</span> 个节点</div>
     <div id="updateTime"></div>
   </div>
 
   <div class="grid" id="proxyGrid">
-    <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 正在拉取代理列表...</div>
+    <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 正在加载代理列表...</div>
   </div>
 </div>
 
 <script>
-const PROXY_SOURCE = 'tgsocks5.json';
-let allProxies = [];
-let currentFilter = 'all';
-let searchQuery = '';
-
-const grid = document.getElementById('proxyGrid');
-const searchInput = document.getElementById('searchInput');
-const refreshBtn = document.getElementById('refreshBtn');
-const filterBtns = document.querySelectorAll('.filter-btn');
-const updateTime = document.getElementById('updateTime');
-const totalCount = document.getElementById('totalCount');
+var PROXY_DATA = null;
 
 function parseProxyLine(line) {
-  const m = line.match(/^socks5:\/\/([^:]+):(\d+)\s+(.+)$/);
+  var m = line.match(/^socks5:\/\/([^:]+):(\d+)\s+(.+)$/);
   if (!m) return null;
-  const host = m[1];
-  const port = parseInt(m[2], 10);
-  const rest = m[3];
-
-  const restClean = rest.replace(/^\S+\s+/, '');
-  const locMatch = restClean.match(/[\u4e00-\u9fa5]+/g);
-  let location = '未知';
+  var host = m[1];
+  var port = parseInt(m[2], 10);
+  var rest = m[3];
+  var restClean = rest.replace(/^\S+\s+/, '');
+  var locMatch = restClean.match(/[\u4e00-\u9fa5]+/g);
+  var location = '未知';
   if (locMatch && locMatch.length >= 2) {
     location = locMatch[0] + ' ' + locMatch[1];
   } else if (locMatch && locMatch.length === 1) {
     location = locMatch[0];
   }
-
-  const isDatacenter = rest.includes('[机房]');
-  const isNative = rest.includes('[原生IP]');
-
-  return {
-    server: host,
-    port: port,
-    location: location.trim(),
-    type: isDatacenter ? '机房' : (isNative ? '原生IP' : '家宽')
-  };
+  var isDatacenter = rest.indexOf('[机房]') !== -1;
+  var isNative = rest.indexOf('[原生IP]') !== -1;
+  var proxyType = isDatacenter ? '机房' : (isNative ? '原生IP' : '家宽');
+  return { server: host, port: port, location: location.trim(), type: proxyType };
 }
 
-function loadProxies() {
-  grid.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 正在拉取代理列表...</div>';
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', PROXY_SOURCE + '?t=' + Date.now(), true);
-  xhr.onload = function() {
-    if (xhr.status !== 200) {
-      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>请求失败: HTTP ' + xhr.status + '</p></div>';
-      return;
-    }
-    try {
-      var data = JSON.parse(xhr.responseText);
-      allProxies = data.proxies || [];
-      totalCount.textContent = allProxies.length;
-      updateTime.textContent = '更新时间: ' + new Date().toLocaleTimeString('zh-CN');
-      renderList();
-    } catch (e) {
-      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>解析数据失败: ' + e.message + '</p></div>';
-    }
-  };
-  xhr.onerror = function() {
-    grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>网络错误，无法加载代理数据</p></div>';
-  };
-  xhr.send();
+function loadProxiesFromJson(data) {
+  PROXY_DATA = data;
+  var allProxies = data.proxies || [];
+  document.getElementById('totalCount').textContent = allProxies.length;
+  document.getElementById('updateTime').textContent = '更新时间: ' + new Date().toLocaleTimeString('zh-CN');
+  renderList(allProxies);
 }
 
-function renderList() {
-  const filtered = allProxies.filter(p => {
-    const s = searchQuery.toLowerCase();
-    const matchesSearch = !s || p.location.toLowerCase().includes(s);
-    const matchesFilter = currentFilter === 'all' || p.type === currentFilter;
+function renderList(allProxies) {
+  var grid = document.getElementById('proxyGrid');
+  var searchQuery = (document.getElementById('searchInput').value || '').toLowerCase();
+  var currentFilter = 'all';
+  var activeFilter = document.querySelector('.filter-btn.active');
+  if (activeFilter) currentFilter = activeFilter.dataset.filter;
+
+  var filtered = allProxies.filter(function(p) {
+    var matchesSearch = !searchQuery || p.location.toLowerCase().indexOf(searchQuery) !== -1;
+    var matchesFilter = currentFilter === 'all' || p.type === currentFilter;
     return matchesSearch && matchesFilter;
   });
 
@@ -160,9 +128,9 @@ function renderList() {
   }
 
   grid.innerHTML = '';
-  filtered.forEach(p => {
-    const deepLink = 'tg://proxy?server=' + encodeURIComponent(p.server) + '&port=' + p.port;
-    const card = document.createElement('div');
+  filtered.forEach(function(p) {
+    var deepLink = 'tg://proxy?server=' + encodeURIComponent(p.server) + '&port=' + p.port;
+    var card = document.createElement('div');
     card.className = 'card';
     card.innerHTML =
       '<div class="card-header">' +
@@ -180,18 +148,47 @@ function renderList() {
   });
 }
 
-searchInput.addEventListener('input', () => { searchQuery = searchInput.value; renderList(); });
-refreshBtn.addEventListener('click', loadProxies);
-filterBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    filterBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = btn.dataset.filter;
-    renderList();
-  });
+function refreshProxies() {
+  var grid = document.getElementById('proxyGrid');
+  grid.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 正在拉取代理列表...</div>';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'tgsocks5.json?t=' + Date.now(), true);
+  xhr.onload = function() {
+    if (xhr.status !== 200) {
+      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>请求失败: HTTP ' + xhr.status + '</p></div>';
+      return;
+    }
+    try {
+      var data = JSON.parse(xhr.responseText);
+      loadProxiesFromJson(data);
+    } catch (e) {
+      grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>解析数据失败</p></div>';
+    }
+  };
+  xhr.onerror = function() {
+    grid.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p>网络错误，无法加载代理数据</p></div>';
+  };
+  xhr.send();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', refreshProxies);
+document.getElementById('searchInput').addEventListener('input', function() {
+  if (PROXY_DATA) renderList(PROXY_DATA.proxies || []);
 });
 
-loadProxies();
+var filterBtns = document.querySelectorAll('.filter-btn');
+for (var i = 0; i < filterBtns.length; i++) {
+  filterBtns[i].addEventListener('click', function() {
+    for (var j = 0; j < filterBtns.length; j++) {
+      filterBtns[j].classList.remove('active');
+    }
+    this.classList.add('active');
+    if (PROXY_DATA) renderList(PROXY_DATA.proxies || []);
+  });
+}
+
+refreshProxies();
 </script>
 </body>
 </html>
