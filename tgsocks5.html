@@ -100,7 +100,8 @@ function parseProxyLine(line) {
   const port = parseInt(m[2], 10);
   const rest = m[3];
 
-  const locMatch = rest.match(/[\u4e00-\u9fa5]+/g);
+  const restClean = rest.replace(/^\S+\s+/, '');
+  const locMatch = restClean.match(/[\u4e00-\u9fa5]+/g);
   let location = '未知';
   if (locMatch && locMatch.length >= 2) {
     location = locMatch[0] + ' ' + locMatch[1];

@@ -1,1 +1,13 @@
-{"proxies":[],"total":0,"updated_at":"","source":"https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt"}
+{
+  "proxies": [
+    {
+      "server": "213.231.154.54",
+      "port": 1080,
+      "location": "机房 保加利亚",
+      "type": "机房"
+    }
+  ],
+  "total": 1,
+  "updated_at": "2026-10-23T09:27:54.078714+00:00Z",
+  "source": "https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt"
+}

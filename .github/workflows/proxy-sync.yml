@@ -43,7 +43,9 @@ jobs:
               port = int(m.group(2))
               rest = m.group(3)
 
-              loc_match = re.findall(r'[\u4e00-\u9fa5]+', rest)
+              # 去掉 "入库时间：xx-xx xx:xx" 前缀，再提取地点
+              rest_clean = re.sub(r'^\S+\s+', '', rest)
+              loc_match = re.findall(r'[\u4e00-\u9fa5]+', rest_clean)
               if len(loc_match) >= 2:
                   location = loc_match[0] + ' ' + loc_match[1]
               elif len(loc_match) == 1:
