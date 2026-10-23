@@ -1,0 +1,88 @@
+name: TG SOCKS5 代理同步
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 拉取上游代理列表
+        run: |
+          curl -sL --max-time 30 \
+            'https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt' \
+            -o /tmp/proxy.txt
+          echo "下载完成: $(wc -l < /tmp/proxy.txt) 行"
+
+      - name: 解析 SOCKS5 代理并写入 JSON
+        run: |
+          python3 -c "
+          import json, re, sys
+
+          with open('/tmp/proxy.txt', 'r') as f:
+              lines = f.readlines()
+
+          proxies = []
+          for line in lines:
+              line = line.strip()
+              if not line.startswith('socks5://'):
+                  continue
+              if 'X.' in line:
+                  continue
+
+              m = re.match(r'^socks5://([^:]+):(\d+)\s+(.+)$', line)
+              if not m:
+                  continue
+
+              host = m.group(1)
+              port = int(m.group(2))
+              rest = m.group(3)
+
+              loc_match = re.findall(r'[\u4e00-\u9fa5]+', rest)
+              if len(loc_match) >= 2:
+                  location = loc_match[0] + ' ' + loc_match[1]
+              elif len(loc_match) == 1:
+                  location = loc_match[0]
+              else:
+                  location = '未知'
+
+              is_datacenter = '[机房]' in rest
+              is_native = '[原生IP]' in rest
+              proxy_type = '机房' if is_datacenter else ('原生IP' if is_native else '家宽')
+
+              proxies.append({
+                  'server': host,
+                  'port': port,
+                  'location': location.strip(),
+                  'type': proxy_type
+              })
+
+          result = {
+              'proxies': proxies,
+              'total': len(proxies),
+              'updated_at': __import__('datetime').datetime.utcnow().isoformat() + 'Z',
+              'source': 'https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt'
+          }
+
+          with open('tgsocks5.json', 'w') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+
+          print(f'共解析 {len(proxies)} 个明文 SOCKS5 代理')
+          for p in proxies:
+              print(f'  {p[\"server\"]}:{p[\"port\"]} {p[\"location\"]} [{p[\"type\"]}]')
+          "
+
+      - name: 提交并推送
+        run: |
+          git config user.name "PAzzxb"
+          git config user.email "PAzzxb@users.noreply.github.com"
+          git add tgsocks5.json
+          git commit -m "proxy-sync: update tgsocks5.json ($(date -u +%Y-%m-%d %H:%M))" || echo "no changes"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
