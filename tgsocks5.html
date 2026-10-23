@@ -37,8 +37,11 @@
   .card-detail { font-size: 12px; color: #94a3b8; margin-bottom: 14px; line-height: 1.6; }
   .card-detail div { display: flex; justify-content: space-between; }
   .card-detail span:last-child { color: #e2e8f0; font-family: monospace; }
-  .connect-btn { display: block; width: 100%; text-align: center; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+  .card-actions { display: flex; gap: 8px; }
+  .connect-btn { flex: 1; text-align: center; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
   .connect-btn:hover { opacity: 0.9; }
+  .copy-btn { width: 44px; display: flex; align-items: center; justify-content: center; background: rgba(51,65,85,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #cbd5e1; cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover { background: rgba(56,189,248,0.2); color: #38bdf8; }
   .loading { text-align: center; padding: 60px 20px; color: #94a3b8; }
   .empty { text-align: center; padding: 60px 20px; color: #64748b; }
   .refresh-btn { background: rgba(56,189,248,0.15); color: #38bdf8; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; }
@@ -129,7 +132,8 @@ function renderList(allProxies) {
 
   grid.innerHTML = '';
   filtered.forEach(function(p) {
-    var deepLink = 'tg://proxy?server=' + encodeURIComponent(p.server) + '&port=' + p.port;
+    var socks5Link = 'socks5://' + p.server + ':' + p.port;
+    var tgLink = 'tg://proxy?server=' + encodeURIComponent(p.server) + '&port=' + p.port;
     var card = document.createElement('div');
     card.className = 'card';
     card.innerHTML =
@@ -141,9 +145,14 @@ function renderList(allProxies) {
         '<div><span>服务器:</span><span>' + p.server + '</span></div>' +
         '<div><span>端口:</span><span>' + p.port + '</span></div>' +
       '</div>' +
-      '<a href="' + deepLink + '" class="connect-btn">' +
-        '<i class="fa-solid fa-bolt"></i> 连接 Telegram' +
-      '</a>';
+      '<div class="card-actions">' +
+        '<a href="' + tgLink + '" class="connect-btn">' +
+          '<i class="fa-solid fa-bolt"></i> 连接 Telegram' +
+        '</a>' +
+        '<button class="copy-btn" data-socks5="' + socks5Link + '">' +
+          '<i class="fa-regular fa-copy"></i> 复制配置' +
+        '</button>' +
+      '</div>';
     grid.appendChild(card);
   });
 }
@@ -187,6 +196,29 @@ for (var i = 0; i < filterBtns.length; i++) {
     if (PROXY_DATA) renderList(PROXY_DATA.proxies || []);
   });
 }
+
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.copy-btn')) {
+    var btn = e.target.closest('.copy-btn');
+    var socks5 = btn.getAttribute('data-socks5');
+    try {
+      navigator.clipboard.writeText(socks5);
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+      setTimeout(function() { btn.innerHTML = orig; }, 1500);
+    } catch (err) {
+      var ta = document.createElement('textarea');
+      ta.value = socks5;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+      setTimeout(function() { btn.innerHTML = orig; }, 1500);
+    }
+  }
+});
 
 refreshProxies();
 </script>
